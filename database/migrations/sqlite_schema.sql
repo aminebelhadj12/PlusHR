@@ -635,3 +635,8 @@ CREATE TABLE IF NOT EXISTS ai_schedule_suggestions (
   assignments TEXT NOT NULL DEFAULT '[]',
   created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS auth_session_generation (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  generation TEXT NOT NULL
+);

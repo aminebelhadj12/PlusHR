@@ -7,10 +7,12 @@ import { createServer as createViteServer } from 'vite';
 import { initDatabaseConnection } from './server/config/database.js';
 import { loadDb } from './server/repositories/dataStore.js';
 import { migrateAuthSecurity } from './server/services/authSecurity.js';
+import { trackApiRequests } from './server/services/maintenance.js';
+import { startBackupScheduler } from './server/services/sqliteBackup.js';
 import { initRealtimeServer } from './server/services/realtimeService.js';
 import { apiRouter } from './server/routes/api.js';
 
-export async function createAppServer(options: { skipVite?: boolean } = {}) {
+export async function createAppServer(options: { skipVite?: boolean; scheduleBackups?: boolean } = {}) {
   await initDatabaseConnection();
   loadDb();
   await migrateAuthSecurity();
@@ -19,6 +21,7 @@ export async function createAppServer(options: { skipVite?: boolean } = {}) {
   const httpServer = http.createServer(app);
   app.set('trust proxy', 1);
 
+  app.use('/api', trackApiRequests);
   app.use(express.json({ limit: '4mb' }));
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
@@ -35,6 +38,9 @@ export async function createAppServer(options: { skipVite?: boolean } = {}) {
 
   // Socket.io attached on same HTTP server (Port 3000)
   initRealtimeServer(httpServer);
+  httpServer.once('listening', () => {
+    if (options.scheduleBackups !== false) httpServer.once('close', startBackupScheduler());
+  });
 
   const isProd = process.env.NODE_ENV === 'production';
   if (!options.skipVite) {
@@ -54,7 +60,9 @@ export async function createAppServer(options: { skipVite?: boolean } = {}) {
   }
 
   // Multer & global error handler
-  app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  app.use((err: Error, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (res.destroyed) return;
+    if (res.headersSent) return next(err);
     console.error('[+HR Server Error]', err.message);
     res.status(400).json({ error: err.message || 'Erreur serveur inattendue.' });
   });

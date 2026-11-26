@@ -2,6 +2,7 @@ import { Server as HttpServer } from 'http';
 import { Server as SocketServer, Socket } from 'socket.io';
 import { verifyAccessToken, JwtPayload } from '../middlewares/auth.js';
 import { loadDb, mutateDb, newId } from '../repositories/dataStore.js';
+import { isInMaintenance } from './maintenance.js';
 import type { NotificationItem } from '../../src/types/index.js';
 
 let io: SocketServer | null = null;
@@ -17,6 +18,7 @@ export function initRealtimeServer(httpServer: HttpServer): SocketServer {
   });
 
   io.use((socket, next) => {
+    if (isInMaintenance()) return next(new Error('Maintenance'));
     try {
       const token =
         (socket.handshake.auth?.token as string | undefined) ||
@@ -37,7 +39,7 @@ export function initRealtimeServer(httpServer: HttpServer): SocketServer {
   io.on('connection', (rawSocket) => {
     const socket = rawSocket as Socket & { user?: JwtPayload };
     const user = socket.user;
-    if (!user) {
+    if (!user || isInMaintenance()) {
       socket.disconnect();
       return;
     }

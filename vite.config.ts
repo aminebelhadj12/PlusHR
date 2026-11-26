@@ -34,6 +34,12 @@ export default defineConfig(() => {
       },
     },
     server: {
+      fs: {
+        deny: [
+          '.env', '.env.*', '*.{crt,pem}', '**/.git/**', '**/backups/**',
+          '**/*.{db,sqlite,sqlite3}', '**/*.{db,sqlite,sqlite3}-{wal,shm,journal}',
+        ],
+      },
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',

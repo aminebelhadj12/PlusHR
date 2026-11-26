@@ -44,7 +44,7 @@ async function runTests() {
   console.log('=== +HR Complete Functional Test Suite ===');
   resetDemoDatabase();
 
-  const { httpServer } = await createAppServer({ skipVite: true });
+  const { httpServer } = await createAppServer({ skipVite: true, scheduleBackups: false });
   await new Promise<void>((resolve) => httpServer.listen(0, '127.0.0.1', resolve));
   const addr = httpServer.address() as { port: number };
   const baseUrl = `http://127.0.0.1:${addr.port}`;

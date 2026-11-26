@@ -342,7 +342,8 @@ export function readAllFromSqlite(db: Database.Database = getSqliteDb()): DbSche
 
   for (const tbl of TABLE_NAMES) {
     const cfg = TABLE_CONFIGS[tbl];
-    const rows = db.prepare(`SELECT ${cfg.columns.join(', ')} FROM ${tbl}`).all() as Array<Record<string, unknown>>;
+    const order = tbl === 'audit_logs' ? ' ORDER BY created_at DESC, rowid DESC' : '';
+    const rows = db.prepare(`SELECT ${cfg.columns.join(', ')} FROM ${tbl}${order}`).all() as Array<Record<string, unknown>>;
     const parsed = rows.map((r) => deserializeRow(r, cfg));
     result[tbl] = parsed;
 

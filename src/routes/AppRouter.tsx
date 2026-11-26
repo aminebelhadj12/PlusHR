@@ -9,6 +9,7 @@ import type { RoleCode } from '../types';
 import { LoginPage } from '../pages/LoginPage';
 import { ChangePasswordPage } from '../pages/ChangePasswordPage';
 import { DashboardPage } from '../pages/DashboardPage';
+import { BackupsPage } from '../pages/BackupsPage';
 import { CompaniesPage } from '../pages/CompaniesPage';
 import { EmployeesPage } from '../pages/EmployeesPage';
 import { EmployeeDossierPage } from '../pages/EmployeeDossierPage';
@@ -118,6 +119,7 @@ export const AppRouter: React.FC = () => {
 
         <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/companies" element={<ProtectedRoute roles={['SUPER_ADMIN']}><CompaniesPage /></ProtectedRoute>} />
+        <Route path="/backups" element={<ProtectedRoute roles={['SUPER_ADMIN']}><BackupsPage /></ProtectedRoute>} />
         <Route path="/employees" element={<ProtectedRoute roles={['COMPANY_ADMIN', 'HR_MANAGER', 'MANAGER']}><EmployeesPage /></ProtectedRoute>} />
         <Route path="/employees/:id" element={<ProtectedRoute roles={['COMPANY_ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE']}><EmployeeDossierPage /></ProtectedRoute>} />
         <Route path="/registration-requests" element={<ProtectedRoute roles={['COMPANY_ADMIN', 'HR_MANAGER']}><RegistrationRequestsPage /></ProtectedRoute>} />

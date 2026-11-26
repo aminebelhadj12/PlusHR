@@ -17,3 +17,5 @@ node_modules/
 *.sqlite
 *.sqlite3
 dist/
+
+backups/

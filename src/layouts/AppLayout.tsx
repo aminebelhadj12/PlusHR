@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Building2,
+  DatabaseBackup,
   Users,
   UserPlus,
   Network,
@@ -49,6 +50,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: '/', labelKey: 'dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE'] },
   { to: '/companies', labelKey: 'companies', icon: Building2, roles: ['SUPER_ADMIN'] },
+  { to: '/backups', labelKey: 'backups', icon: DatabaseBackup, roles: ['SUPER_ADMIN'] },
   { to: '/employees', labelKey: 'employees', icon: Users, roles: ['COMPANY_ADMIN', 'HR_MANAGER', 'MANAGER'] },
   { to: '/registration-requests', labelKey: 'registrations', icon: UserPlus, roles: ['COMPANY_ADMIN', 'HR_MANAGER'] },
   { to: '/departments', labelKey: 'departments', icon: Network, roles: ['COMPANY_ADMIN', 'HR_MANAGER', 'MANAGER'] },

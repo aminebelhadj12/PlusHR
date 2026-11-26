@@ -13,7 +13,7 @@ const changedAdminPassword = 'Changed#Admin2026!';
 const sqlite = isolateTestDatabase();
 
 async function startServer() {
-  const { httpServer } = await createAppServer({ skipVite: true });
+  const { httpServer } = await createAppServer({ skipVite: true, scheduleBackups: false });
   await new Promise<void>((resolve) => httpServer.listen(0, '127.0.0.1', resolve));
   const { port } = httpServer.address() as { port: number };
   return {

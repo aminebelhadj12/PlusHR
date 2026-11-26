@@ -1428,12 +1428,16 @@ function queueWrite<T>(run: () => T | Promise<T>): Promise<T> {
   return next;
 }
 
+export function waitForDbWrites(): Promise<void> {
+  return writeQueue;
+}
+
 export function newId(prefix = 'id'): string {
   return `${prefix}-${crypto.randomUUID().slice(0, 12)}`;
 }
 
 export function logAudit(
-  db: DbSchema,
+  db: Pick<DbSchema, 'audit_logs'>,
   params: {
     company_id: string | null;
     user_id: string | null;

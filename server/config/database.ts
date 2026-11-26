@@ -28,6 +28,17 @@ export function getSqliteDb(): Database.Database {
   return sqliteDb;
 }
 
+export function closeSqliteDb(): void {
+  sqliteDb?.close();
+  sqliteDb = null;
+}
+
+export function getSessionGeneration(): string {
+  const row = getSqliteDb().prepare('SELECT generation FROM auth_session_generation WHERE id = 1').get() as
+    { generation: string } | undefined;
+  return row?.generation ?? '';
+}
+
 export async function initDatabaseConnection(): Promise<DbMode> {
   const requestedMode = (process.env.DB_MODE || 'sqlite').toLowerCase();
   const host = process.env.DB_HOST?.trim();

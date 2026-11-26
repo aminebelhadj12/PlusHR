@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { getSqliteDb } from '../config/database.js';
+import { getSessionGeneration, getSqliteDb } from '../config/database.js';
 import type { DbSchema, DbUser } from '../repositories/dataStore.js';
 import type { RoleCode } from '../../src/types/index.js';
 
@@ -84,8 +84,11 @@ export function createSessionPayload(user: DbUser, rememberMe: boolean): JwtPayl
 type SessionIdentity = Pick<DbUser, 'id' | 'company_id' | 'role_code' | 'password_hash'>;
 
 function credentialStamp(user: SessionIdentity): string {
+  const generation = getSessionGeneration();
+  const identity = [user.id, user.password_hash];
+  if (generation) identity.push(generation);
   return crypto.createHmac('sha256', getJwtSecret())
-    .update(JSON.stringify([user.id, user.password_hash])).digest('hex');
+    .update(JSON.stringify(identity)).digest('hex');
 }
 
 export function matchesSession(payload: JwtPayload, user: SessionIdentity): boolean {

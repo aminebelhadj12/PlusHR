@@ -45,7 +45,7 @@ function refreshAccessToken(): Promise<boolean> {
   return pendingRefresh;
 }
 
-export async function apiRequest<T = unknown>(url: string, options: RequestInit = {}): Promise<T> {
+async function authenticatedFetch(url: string, options: RequestInit): Promise<Response> {
   const previousToken = inMemoryAccessToken;
   let res = await rawFetch(url, options);
 
@@ -55,6 +55,10 @@ export async function apiRequest<T = unknown>(url: string, options: RequestInit 
     }
   }
 
+  return res;
+}
+
+async function readPayload(res: Response) {
   const contentType = res.headers.get('content-type') || '';
   const payload = contentType.includes('application/json') ? await res.json() : await res.text();
 
@@ -66,5 +70,15 @@ export async function apiRequest<T = unknown>(url: string, options: RequestInit 
     throw new ApiError(msg, res.status);
   }
 
-  return payload as T;
+  return payload;
+}
+
+export async function apiRequest<T = unknown>(url: string, options: RequestInit = {}): Promise<T> {
+  return await readPayload(await authenticatedFetch(url, options)) as T;
+}
+
+export async function apiDownload(url: string, options: RequestInit): Promise<Blob> {
+  const response = await authenticatedFetch(url, options);
+  if (!response.ok) await readPayload(response);
+  return response.blob();
 }
