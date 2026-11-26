@@ -1,0 +1,1073 @@
+# +HR — Intelligent Human Resources Management System
+
+## 1. Mission principale
+
+Agis comme un architecte logiciel senior, développeur Full Stack React, expert UI/UX et spécialiste des systèmes de gestion des ressources humaines.
+
+Développe une application web complète, moderne, intelligente, sécurisée et fonctionnelle appelée **+HR**, destinée à la gestion des ressources humaines de plusieurs entreprises.
+
+Le projet est inspiré du système HR Vision, mais adapté aux entreprises marocaines et internationales plutôt qu'aux établissements universitaires.
+
+Il s'agit d'un projet de fin d'études en développement informatique.
+
+Je ne veux pas une simple maquette, une landing page ou un dashboard statique. Je veux une véritable application Full Stack avec des fonctionnalités opérationnelles, une authentification, une base de données persistante et des interactions entre les différents utilisateurs.
+
+## 2. Architecture technique
+
+Utilise une architecture Three-Tier.
+
+### Presentation Layer
+
+- React.js.
+- TypeScript.
+- Vite.
+- Tailwind CSS.
+- React Router.
+- Lucide React.
+- Recharts.
+- Interface entièrement responsive.
+
+### Application Layer
+
+- Node.js.
+- Express.js.
+- REST API.
+- Socket.io pour les communications en temps réel.
+- Gemini API pour l'intelligence artificielle.
+- JWT pour l'authentification.
+- bcrypt pour le hachage des mots de passe.
+- Middleware de validation et d'autorisation.
+
+### Data Layer
+
+- MySQL comme base de données principale.
+- mysql2 pour la connexion.
+- Stockage sécurisé des documents et des photos.
+- Migrations SQL.
+- Données initiales de démonstration.
+- Relations, clés étrangères, index et contraintes.
+
+Utilise des variables d'environnement pour les informations de connexion à MySQL et les secrets.
+
+Si MySQL n'est pas disponible dans l'environnement de prévisualisation, crée une couche de repository indépendante permettant d'utiliser temporairement une base de démonstration persistante, clairement identifiée, sans supprimer la véritable intégration MySQL.
+
+Ne développe pas d'application React Native. L'intégralité du système doit être accessible depuis le navigateur.
+
+## 3. Identité visuelle
+
+Nom : **+HR**
+
+Slogan : Human Resources, Made Smarter.
+
+Créer une identité visuelle professionnelle inspirée des plateformes SaaS modernes comme Personio, BambooHR et Linear, sans copier leur identité.
+
+Palette :
+
+- Primary : #2563EB.
+- Dark Navy : #0F172A.
+- Background : #F8FAFC.
+- White : #FFFFFF.
+- Success : #16A34A.
+- Warning : #F59E0B.
+- Danger : #DC2626.
+
+Utiliser une typographie Inter, des bordures légères, des cartes élégantes, des icônes cohérentes et des animations discrètes.
+
+Créer :
+
+- Sidebar rétractable.
+- Navbar supérieure.
+- Barre de recherche globale.
+- Centre de notifications.
+- Menu de profil utilisateur.
+- Breadcrumbs.
+- Tableaux professionnels.
+- Graphiques interactifs.
+- Modales de confirmation.
+- Skeleton loaders.
+- Toast notifications.
+- États vides et messages d'erreur.
+- Dark Mode et Light Mode.
+
+La langue principale doit être le français, avec possibilité de choisir l'anglais et l'arabe avec support RTL.
+
+## 4. Architecture multi-entreprises
+
+L'application doit fonctionner comme un SaaS multi-tenant.
+
+Chaque entreprise possède :
+
+- Son propre espace.
+- Son logo.
+- Ses employés.
+- Ses départements.
+- Ses managers.
+- Ses paramètres.
+- Ses horaires.
+- Ses documents.
+- Ses données RH.
+- Son abonnement.
+
+Chaque ressource appartenant à une entreprise doit être associée à un company_id.
+
+L'isolation des données doit être garantie par le backend et non uniquement par l'interface.
+
+Aucune entreprise ne doit pouvoir consulter les données d'une autre entreprise.
+
+## 5. Rôles et permissions
+
+Créer cinq rôles.
+
+### Super Admin
+
+Administrateur global de la plateforme.
+
+- Gestion des entreprises.
+- Création des comptes entreprises.
+- Activation et suspension des entreprises.
+- Gestion des abonnements.
+- Statistiques globales de la plateforme.
+- Journal d'activité.
+- Configuration générale.
+- Gestion des incidents techniques.
+
+### Administrateur Entreprise
+
+- Gestion de son entreprise.
+- Gestion des utilisateurs et permissions.
+- Gestion des départements.
+- Gestion des postes.
+- Création des demandes d'ajout des employés.
+- Gestion des paramètres RH.
+- Correction des enregistrements autorisés.
+- Accès aux statistiques de son entreprise.
+
+### Responsable RH
+
+- Validation des nouveaux employés.
+- Gestion des dossiers du personnel.
+- Consultation des présences.
+- Validation finale des congés.
+- Validation finale des autorisations de sortie.
+- Gestion des contrats.
+- Gestion des salaires.
+- Gestion des annonces.
+- Organisation des réunions.
+- Consultation des analyses RH.
+
+### Manager
+
+- Gestion de son département.
+- Consultation des employés de son équipe.
+- Première validation des congés.
+- Première validation des sorties.
+- Gestion des plannings.
+- Attribution des tâches.
+- Gestion de la charge de travail.
+- Consultation des statistiques de son équipe.
+- Validation des recommandations IA.
+
+### Employé
+
+- Consultation de son dashboard personnel.
+- Pointage d'entrée et de sortie.
+- Consultation des présences.
+- Consultation des absences et retards.
+- Demandes de congés.
+- Demandes d'autorisation de sortie.
+- Consultation du solde de congés.
+- Consultation de ses contrats.
+- Consultation des bulletins de paie.
+- Consultation de son planning.
+- Messagerie interne.
+- Notifications.
+- Assistant intelligent.
+- Modification du profil.
+
+Chaque rôle doit avoir un dashboard, une navigation et des permissions spécifiques.
+
+## 6. Authentification et sécurité
+
+Créer une page de connexion professionnelle avec le logo +HR.
+
+Champs :
+
+- Identifiant professionnel ou matricule.
+- Mot de passe.
+- Afficher ou masquer le mot de passe.
+- Se souvenir de moi.
+- Mot de passe oublié.
+- Bouton de connexion.
+
+Ne pas autoriser l'inscription publique des employés.
+
+Workflow de création d'un compte employé :
+
+1. L'administrateur crée une demande d'ajout.
+2. Le responsable RH reçoit une notification.
+3. Le responsable RH accepte ou refuse.
+4. Après acceptation, le compte est activé.
+5. L'employé reçoit son identifiant et un mot de passe temporaire unique.
+6. Le changement du mot de passe est obligatoire à la première connexion.
+
+Créer une récupération de mot de passe par OTP :
+
+- Adresse email professionnelle.
+- Code à six chiffres.
+- Expiration après cinq minutes.
+- Vérification du code.
+- Nouveau mot de passe.
+- Confirmation du nouveau mot de passe.
+- Limitation du nombre de tentatives.
+
+Utiliser des sessions sécurisées et des cookies HttpOnly lorsque possible.
+
+Appliquer les permissions côté serveur sur toutes les routes.
+
+## 7. Dashboard Administrateur et RH
+
+Créer un dashboard dynamique contenant :
+
+- Nombre total d'employés.
+- Employés actifs.
+- Présents aujourd'hui.
+- Absents aujourd'hui.
+- Employés en retard.
+- Employés en congé.
+- Taux de présence.
+- Demandes en attente.
+- Nouveaux employés.
+- Contrats proches de l'expiration.
+- Masse salariale mensuelle.
+- Répartition des employés par département.
+
+Ajouter les graphiques suivants :
+
+- Évolution des présences.
+- Évolution des absences.
+- Répartition des départements.
+- Évolution des recrutements.
+- Répartition CDD et CDI.
+- Statistiques des congés.
+- Évolution des heures travaillées.
+
+Les graphiques doivent utiliser les véritables données de la base de données.
+
+Ajouter une liste des activités récentes, les prochaines réunions, les annonces et les demandes à traiter.
+
+## 8. Gestion des employés
+
+Créer une page complète de gestion des employés.
+
+Afficher :
+
+- Photo.
+- Matricule unique.
+- Nom et prénom.
+- Email professionnel.
+- Téléphone.
+- Département.
+- Poste.
+- Manager.
+- Date d'embauche.
+- Type de contrat.
+- Statut.
+- Actions.
+
+Fonctionnalités :
+
+- Ajouter un employé.
+- Modifier un employé.
+- Consulter un employé.
+- Désactiver un employé.
+- Archiver un employé.
+- Recherche instantanée.
+- Filtrage par département.
+- Filtrage par statut.
+- Pagination.
+- Import CSV ou Excel.
+- Export Excel et PDF.
+
+Créer une fiche employé détaillée avec plusieurs onglets :
+
+- Informations personnelles.
+- Informations professionnelles.
+- Présences.
+- Absences.
+- Congés.
+- Contrats.
+- Documents.
+- Salaires.
+- Planning.
+- Charge de travail.
+- Historique des modifications.
+
+## 9. Gestion des départements et postes
+
+Créer un module permettant de :
+
+- Ajouter un département.
+- Modifier un département.
+- Archiver un département.
+- Désigner un manager.
+- Ajouter des postes.
+- Affecter des employés.
+- Visualiser la structure hiérarchique.
+- Consulter les statistiques par département.
+- Afficher un organigramme interactif.
+
+Préparer des départements de démonstration :
+
+- Ressources Humaines.
+- Production.
+- Maintenance.
+- Qualité.
+- Informatique.
+- Logistique.
+- Finance.
+- Process Engineering.
+
+## 10. Gestion des présences
+
+Créer un véritable système de pointage.
+
+Fonctionnalités employé :
+
+- Check-in.
+- Check-out.
+- Horloge en temps réel.
+- Date du jour.
+- Heure d'entrée.
+- Heure de sortie.
+- Durée de travail.
+- Historique des pointages.
+- Planning du jour.
+
+Fonctionnalités RH et administrateur :
+
+- Liste des présences quotidiennes.
+- Filtres par date et département.
+- Consultation des absences.
+- Gestion des retards.
+- Gestion des départs anticipés.
+- Calcul des heures supplémentaires.
+- Correction des pointages par utilisateur autorisé.
+- Historique des corrections.
+- Export PDF et Excel.
+
+Statuts :
+
+- Présent.
+- Absent.
+- En retard.
+- Congé.
+- Absence justifiée.
+- Jour de repos.
+- Télétravail.
+
+Comparer les horaires réels aux horaires du planning.
+
+Prévoir une vérification de localisation avec autorisation explicite de l'utilisateur, configurable par entreprise.
+
+Pour la vérification d'identité, utiliser WebAuthn si disponible et correctement configuré. Ne pas simuler une vérification biométrique.
+
+Ne pas collecter ou stocker les empreintes digitales.
+
+## 11. Gestion des congés
+
+Créer un système de demandes de congés avec validation en deux étapes.
+
+Workflow :
+
+Employé → Manager → Responsable RH → Décision finale.
+
+Si le manager refuse, la demande ne doit pas passer au responsable RH.
+
+Types de congés configurables :
+
+- Congé annuel.
+- Congé maladie.
+- Congé exceptionnel.
+- Congé maternité.
+- Congé paternité.
+- Congé sans solde.
+- Autre.
+
+L'employé doit pouvoir :
+
+- Créer une demande.
+- Sélectionner le type de congé.
+- Choisir les dates.
+- Ajouter un motif.
+- Joindre un justificatif.
+- Consulter son solde.
+- Suivre l'état de sa demande.
+- Modifier ou annuler une demande encore en attente, selon les règles définies.
+
+Contrôles automatiques :
+
+- Solde insuffisant.
+- Chevauchement de congés.
+- Dates invalides.
+- Demande dupliquée.
+- Calcul des jours ouvrables.
+- Gestion des jours fériés configurables.
+
+Déduire les jours du solde après validation finale, dans une transaction sécurisée.
+
+Envoyer une notification à chaque changement de statut.
+
+## 12. Gestion des autorisations de sortie
+
+Créer un module séparé pour les sorties pendant les heures de travail.
+
+Champs :
+
+- Type de sortie.
+- Date.
+- Heure de départ.
+- Heure de retour.
+- Motif.
+- Justificatif.
+- Statut.
+
+Validation en deux étapes par le manager et le responsable RH.
+
+Afficher :
+
+- Nombre de sorties.
+- Total des heures de sortie.
+- Retards cumulés.
+- Départs anticipés.
+- Demandes acceptées.
+- Demandes refusées.
+
+Prévoir les règles inspirées de HR Vision :
+
+- Maximum de quatre heures de sortie par jour.
+- Conversion de 7,5 heures cumulées en un jour de congé.
+- Seuil de retard de quinze minutes.
+
+Ces règles doivent être désactivables et modifiables par entreprise. Elles ne doivent être appliquées qu'après validation de leur conformité aux politiques et au droit du travail applicables.
+
+Éviter tout double comptage des heures.
+
+## 13. Gestion des horaires et plannings
+
+Créer un calendrier professionnel avec vues :
+
+- Journalière.
+- Hebdomadaire.
+- Mensuelle.
+
+Fonctionnalités :
+
+- Créer des horaires de travail.
+- Affecter les employés aux horaires.
+- Gérer les équipes et shifts.
+- Gérer les jours de repos.
+- Gérer les horaires de nuit.
+- Détecter les conflits.
+- Afficher les congés approuvés.
+- Calculer les heures planifiées.
+- Comparer les heures réelles et prévues.
+
+Prévoir plusieurs équipes :
+
+- Équipe du matin.
+- Équipe de l'après-midi.
+- Équipe de nuit.
+- Équipe administrative.
+
+## 14. Gestion des tâches et de la charge de travail
+
+Adapter le module TA Management et Course Management de HR Vision à un environnement professionnel.
+
+Remplacer les cours, sections et laboratoires par :
+
+- Projets.
+- Missions.
+- Tâches.
+- Activités professionnelles.
+- Équipes.
+- Shifts.
+
+Chaque tâche contient :
+
+- Titre.
+- Description.
+- Département.
+- Employé responsable.
+- Priorité.
+- Date de début.
+- Date limite.
+- Durée estimée.
+- Durée réelle.
+- Statut.
+- Commentaires.
+
+Créer une vue Kanban :
+
+- À faire.
+- En cours.
+- En validation.
+- Terminé.
+
+Calculer la charge de travail hebdomadaire selon les heures planifiées, les tâches, les réunions et les responsabilités supplémentaires.
+
+Afficher :
+
+- Capacité de travail.
+- Charge actuelle.
+- Heures disponibles.
+- Risques de surcharge.
+- Répartition des tâches.
+
+Détecter les conflits horaires et les surcharges.
+
+## 15. Gestion des contrats
+
+Créer un module de gestion des contrats :
+
+- CDI.
+- CDD.
+- Stage.
+- Intérim.
+- ANAPEC.
+- Autre.
+
+Fonctionnalités :
+
+- Création d'un contrat.
+- Affectation à un employé.
+- Date de début.
+- Date de fin.
+- Renouvellement.
+- Salaire contractuel.
+- Documents associés.
+- Archivage.
+- Alertes d'expiration à 30, 15 et 7 jours.
+
+## 16. Gestion des salaires
+
+Créer un module de préparation et de suivi de la paie.
+
+Afficher :
+
+- Salaire de base.
+- Primes.
+- Heures supplémentaires.
+- Indemnités.
+- Déductions validées.
+- Cotisations configurées.
+- Salaire brut.
+- Salaire net.
+
+Utiliser le dirham marocain MAD par défaut.
+
+Les formules et taux doivent être configurables. Ne pas inventer des taux légaux de CNSS, AMO ou impôts.
+
+Ajouter :
+
+- Préparation de la paie mensuelle.
+- Validation par RH.
+- Historique des salaires.
+- Génération de bulletins PDF.
+- Téléchargement par l'employé.
+- Export Excel.
+
+Les bulletins doivent rester confidentiels.
+
+## 17. Gestion des annonces
+
+Créer un espace d'annonces internes.
+
+Fonctionnalités :
+
+- Publier une annonce.
+- Modifier.
+- Supprimer.
+- Épingler.
+- Ajouter une pièce jointe.
+- Définir une date d'expiration.
+- Choisir une catégorie.
+- Choisir les destinataires.
+- Envoyer à toute l'entreprise.
+- Envoyer à un département.
+- Envoyer à un rôle spécifique.
+- Ajouter des commentaires.
+- Modifier ou supprimer ses commentaires.
+- Modérer les commentaires.
+
+Les annonces épinglées doivent apparaître sur les dashboards concernés.
+
+## 18. Gestion des réunions
+
+Créer un module de réunions professionnelles.
+
+Champs :
+
+- Titre.
+- Description.
+- Organisateur.
+- Date.
+- Heure de début.
+- Heure de fin.
+- Participants.
+- Département.
+- Lieu.
+- Type de réunion.
+- Lien Google Meet, Zoom ou Teams.
+
+Fonctionnalités :
+
+- Créer.
+- Modifier.
+- Annuler.
+- Inviter des employés.
+- Afficher dans le calendrier.
+- Notifications.
+- Invitations par email si un service email est configuré.
+- Envoi d'une notification d'annulation.
+
+Ne pas prétendre avoir créé une réunion externe ou envoyé un email si le service correspondant n'est pas connecté.
+
+## 19. Messagerie interne
+
+Créer une messagerie professionnelle en temps réel avec Socket.io.
+
+Fonctionnalités :
+
+- Conversations privées.
+- Recherche des collègues autorisés.
+- Envoi de messages.
+- Réponse à un message.
+- Modification d'un message.
+- Suppression d'un message.
+- Pièces jointes.
+- Historique des conversations.
+- Messages non lus.
+- Indicateur de présence en ligne.
+- Indicateur de saisie.
+- Horodatage.
+- Notifications.
+
+Vérifier les permissions de chaque conversation côté serveur.
+
+La messagerie doit rester isolée par entreprise.
+
+## 20. Notifications en temps réel
+
+Créer un centre de notifications.
+
+Types :
+
+- Nouveau compte employé.
+- Demande de congé.
+- Congé accepté ou refusé.
+- Autorisation de sortie.
+- Nouvelle annonce.
+- Nouveau message.
+- Réunion.
+- Contrat proche de l'expiration.
+- Nouveau bulletin de paie.
+- Nouvelle tâche.
+- Modification du planning.
+
+Ajouter :
+
+- Compteur de notifications non lues.
+- Marquer comme lu.
+- Marquer tout comme lu.
+- Historique.
+- Redirection vers la ressource concernée.
+- Préférences de notification.
+
+## 21. Assistant intelligent Gemini
+
+Créer une fonctionnalité appelée **+HR AI Assistant**.
+
+Utiliser Gemini API uniquement depuis le serveur.
+
+L'assistant doit répondre en fonction du rôle de l'utilisateur et des données auxquelles il est autorisé à accéder.
+
+Exemples :
+
+- Combien d'employés sont absents aujourd'hui ?
+- Quel est mon solde de congés ?
+- Quel est mon planning cette semaine ?
+- Quels contrats arrivent bientôt à expiration ?
+- Quelles demandes de congés sont en attente ?
+- Quelle équipe présente un risque de surcharge ?
+- Résume les statistiques RH du mois.
+
+Fonctionnalités :
+
+- Interface de chat.
+- Historique des conversations.
+- Suggestions de questions.
+- Réponses en français, anglais et arabe.
+- Résumés des statistiques.
+- Recommandations organisationnelles.
+
+Ne jamais inventer des données RH.
+
+Le backend doit récupérer les données autorisées et calculer les indicateurs avant de les transmettre à Gemini.
+
+Ne pas transmettre les salaires individuels, documents confidentiels, informations médicales ou données personnelles inutiles au modèle.
+
+Ne jamais exposer la clé Gemini dans le frontend.
+
+Ne pas permettre au modèle d'exécuter directement des requêtes SQL arbitraires.
+
+## 22. Analyse intelligente RH
+
+Créer une page AI Analytics comprenant :
+
+- Analyse des tendances d'absentéisme.
+- Analyse des retards.
+- Analyse des heures supplémentaires.
+- Analyse de la charge de travail.
+- Prévisions des besoins en personnel.
+- Détection des anomalies dans les données.
+- Recommandations organisationnelles.
+- Comparaison des périodes.
+- Statistiques par département.
+- Graphiques interactifs.
+
+Les prévisions doivent être basées sur des données historiques suffisantes. Indiquer clairement lorsqu'une prévision fiable n'est pas possible.
+
+Présenter les recommandations comme des aides à la décision et non comme des décisions définitives.
+
+Ne pas utiliser les congés maladie, maternité ou autres absences protégées comme critères négatifs de performance.
+
+Ne jamais automatiser les décisions de licenciement, sanction, promotion ou rémunération à partir de l'IA.
+
+## 23. Assistant intelligent de planification
+
+Créer un module AI Schedule Suggestion inspiré du système HR Vision.
+
+Objectif : proposer une répartition équilibrée des tâches et horaires.
+
+Contraintes :
+
+- Appartenance au département.
+- Compétences nécessaires.
+- Disponibilité des employés.
+- Absence de conflit horaire.
+- Respect des heures de travail.
+- Équilibre de charge.
+- Respect des jours de repos.
+- Prise en compte des congés approuvés.
+
+Afficher les suggestions dans une interface dédiée.
+
+Le manager doit pouvoir :
+
+- Consulter la proposition.
+- Comparer avec le planning actuel.
+- Modifier la proposition.
+- Accepter.
+- Refuser.
+
+Aucune modification du planning ne doit être appliquée sans validation humaine.
+
+Prévoir un algorithme de secours déterministe lorsque Gemini n'est pas disponible.
+
+## 24. Espace employé
+
+Créer un portail employé distinct, accessible après connexion avec matricule et mot de passe.
+
+Dashboard personnel :
+
+- Message de bienvenue.
+- Horloge.
+- Statut de présence.
+- Bouton de pointage.
+- Heures travaillées.
+- Nombre d'absences.
+- Nombre de retards.
+- Solde des congés.
+- Demandes en cours.
+- Planning de la semaine.
+- Tâches assignées.
+- Dernières annonces.
+- Prochaines réunions.
+
+Menu :
+
+- Accueil.
+- Mes présences.
+- Mes absences.
+- Mes congés.
+- Mes sorties.
+- Mon planning.
+- Mes tâches.
+- Mes contrats.
+- Mes bulletins de paie.
+- Mes documents.
+- Messagerie.
+- Notifications.
+- Assistant IA.
+- Mon profil.
+
+L'employé ne doit jamais accéder aux données privées d'un autre employé.
+
+## 25. Rapports et statistiques
+
+Créer des rapports filtrables par période, entreprise et département.
+
+Rapports :
+
+- Présences.
+- Absences.
+- Retards.
+- Congés.
+- Autorisations de sortie.
+- Heures travaillées.
+- Heures supplémentaires.
+- Contrats.
+- Paie.
+- Charge de travail.
+- Effectifs.
+
+Prévoir :
+
+- Export PDF.
+- Export Excel.
+- Export CSV.
+- Impression.
+- Aperçu avant export.
+- Logo de l'entreprise.
+- Date de génération.
+- En-tête professionnel.
+
+## 26. Base de données MySQL
+
+Créer un modèle relationnel complet avec les tables suivantes :
+
+- companies
+- subscriptions
+- users
+- roles
+- permissions
+- role_permissions
+- departments
+- positions
+- employees
+- employee_registration_requests
+- employee_documents
+- contracts
+- attendance_records
+- attendance_corrections
+- work_schedules
+- shifts
+- shift_assignments
+- leave_types
+- leave_balances
+- leave_requests
+- exit_types
+- exit_requests
+- approval_history
+- payrolls
+- payroll_items
+- payslips
+- projects
+- tasks
+- task_assignments
+- workload_records
+- announcements
+- announcement_comments
+- meetings
+- meeting_participants
+- calendar_events
+- notifications
+- conversations
+- conversation_members
+- messages
+- message_attachments
+- password_reset_otps
+- refresh_tokens
+- ai_conversations
+- ai_messages
+- audit_logs
+- company_settings
+- holidays
+
+Ajouter les clés primaires, clés étrangères, contraintes d'unicité, index, dates de création et dates de modification nécessaires.
+
+Garantir les relations entre les ressources appartenant à une même entreprise.
+
+Créer les fichiers SQL :
+
+- schema.sql
+- seed.sql
+
+Créer également un diagramme ERD en Mermaid.
+
+## 27. Structure du projet
+
+Organiser le code proprement :
+
+- src/components
+- src/pages
+- src/layouts
+- src/hooks
+- src/contexts
+- src/services
+- src/types
+- src/utils
+- src/routes
+- server/controllers
+- server/routes
+- server/services
+- server/middlewares
+- server/repositories
+- server/config
+- server/validators
+- database/migrations
+- database/seeds
+- tests
+- public
+- docs
+
+Éviter de placer toute l'application dans un seul fichier App.tsx.
+
+Créer des composants réutilisables et des services séparés.
+
+## 28. Comptes et données de démonstration
+
+Créer deux entreprises fictives avec des données réalistes mais entièrement synthétiques.
+
+Ajouter :
+
+- 40 employés.
+- 8 départements.
+- Des managers.
+- Des contrats.
+- Des présences.
+- Des absences.
+- Des congés.
+- Des demandes en attente.
+- Des tâches.
+- Des réunions.
+- Des annonces.
+- Des notifications.
+
+Créer un compte de test pour chacun des cinq rôles.
+
+Afficher les identifiants de démonstration uniquement dans le mode développement et dans la documentation de test.
+
+Utiliser des mots de passe de test sécurisés et distincts des comptes de production.
+
+Désactiver les comptes de démonstration lors du déploiement en production.
+
+## 29. Paramètres
+
+Créer une page de configuration avec :
+
+- Informations de l'entreprise.
+- Logo.
+- Langue.
+- Devise.
+- Fuseau horaire.
+- Horaires de travail.
+- Jours ouvrables.
+- Jours fériés.
+- Types de congés.
+- Règles de présence.
+- Règles de retard.
+- Règles des sorties.
+- Paramètres de paie.
+- Notifications.
+- Sécurité.
+- Gestion des permissions.
+
+Utiliser Africa/Casablanca comme fuseau horaire initial et MAD comme devise initiale.
+
+## 30. Exigences de qualité
+
+Tous les boutons doivent fonctionner.
+
+Tous les formulaires doivent être validés.
+
+Toutes les pages doivent avoir une route fonctionnelle.
+
+Les tableaux doivent permettre la recherche, le filtrage et la pagination.
+
+Les statistiques doivent être calculées à partir des données persistantes.
+
+Les opérations CRUD doivent être réellement connectées au backend.
+
+Ne pas utiliser localStorage comme base de données des informations RH ou comme stockage de secrets.
+
+Implémenter :
+
+- Protection contre les injections SQL.
+- Protection XSS.
+- Protection CSRF si nécessaire.
+- Rate limiting.
+- Validation des fichiers téléversés.
+- Vérification des permissions.
+- Isolation multi-entreprises.
+- Journalisation des opérations sensibles.
+- Gestion des erreurs.
+- Tests des workflows métier.
+- Protection des données personnelles.
+
+## 31. Tests obligatoires
+
+Tester au minimum :
+
+1. Connexion des cinq rôles.
+2. Refus d'accès aux pages non autorisées.
+3. Isolation entre les entreprises.
+4. Création et validation d'un employé.
+5. Pointage d'entrée et de sortie.
+6. Calcul des retards.
+7. Validation des congés en deux étapes.
+8. Refus des congés dépassant le solde.
+9. Détection des chevauchements.
+10. Gestion des autorisations de sortie.
+11. Détection des conflits de planning.
+12. Envoi de messages.
+13. Réception des notifications.
+14. Génération de rapports.
+15. Permissions de l'assistant Gemini.
+16. Persistance des données après rechargement.
+17. Affichage responsive.
+
+## 32. Livrables et instructions finales
+
+Génère directement les fichiers sources de l'application.
+
+Fournis :
+
+- Frontend React complet.
+- Backend Node.js/Express.
+- Base de données MySQL.
+- API REST.
+- Fichier .env.example.
+- Documentation README.md.
+- Instructions d'installation.
+- Commandes npm install et npm run dev.
+- Documentation des endpoints API.
+- Comptes de test.
+- Diagramme d'architecture.
+- Diagramme ERD.
+- Diagrammes UML principaux.
+- Tests fonctionnels.
+
+Commence par mettre en place les fondations techniques, l'authentification, la base de données, les permissions et le design général.
+
+Implémente ensuite les modules RH, l'espace employé, les communications et les fonctionnalités IA.
+
+Exécute les tests et corrige les erreurs de compilation et d'exécution.
+
+Ne te limite pas à expliquer comment développer le projet. Construis réellement l'application dans l'environnement Google AI Studio.
+
+Ne laisse pas de fonctionnalités factices ou de boutons sans action. Si une intégration externe nécessite une configuration manuelle, indique précisément les étapes restantes.
+
+La version finale doit être une application professionnelle, cohérente, fonctionnelle, maintenable et adaptée à une soutenance de PFE.
+
+**START BUILDING +HR NOW.**

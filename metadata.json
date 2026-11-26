@@ -1,0 +1,6 @@
+{
+  "name": "+HR — Intelligent Human Resources Management System",
+  "description": "Multi-tenant SaaS HR Management System inspired by HR Vision for Moroccan and international enterprises.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
