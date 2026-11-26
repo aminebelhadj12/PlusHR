@@ -83,10 +83,10 @@ export async function login(req: Request, res: Response): Promise<void> {
       return { status: 401, error: 'Identifiants invalides.' };
     }
     if (!user.is_active) {
-      return { status: 403, error: 'Ce compte est d?sactiv?. Contactez votre administrateur.' };
+      return { status: 403, error: 'Ce compte est désactivé. Contactez votre administrateur.' };
     }
     if (!canAuthenticate(db, user)) {
-      return { status: 403, error: 'L?espace de votre entreprise est actuellement suspendu.' };
+      return { status: 403, error: 'L’espace de votre entreprise est actuellement suspendu.' };
     }
 
     user.last_login_at = new Date().toISOString();
@@ -97,7 +97,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       action: 'USER_LOGIN',
       entity_type: 'user',
       entity_id: user.id,
-      details: `Connexion r?ussie (${user.role_code})`,
+      details: `Connexion réussie (${user.role_code})`,
       ip_address: req.ip,
     });
     return { session: issueSession(db, user, rememberMe) };
@@ -126,7 +126,7 @@ export async function logout(req: Request, res: Response): Promise<void> {
 export async function refreshSession(req: Request, res: Response): Promise<void> {
   const refreshCookie = req.cookies?.plushr_refresh;
   if (typeof refreshCookie !== 'string' || !refreshCookie) {
-    res.status(401).json({ error: 'Token de rafra?chissement manquant.' });
+    res.status(401).json({ error: 'Token de rafraîchissement manquant.' });
     return;
   }
 
@@ -140,7 +140,7 @@ export async function refreshSession(req: Request, res: Response): Promise<void>
       throw new Error('Invalid refresh claims');
     }
   } catch {
-    res.status(401).json({ error: 'Refresh token invalide ou expir?.' });
+    res.status(401).json({ error: 'Refresh token invalide ou expiré.' });
     return;
   }
 
@@ -160,7 +160,7 @@ export async function refreshSession(req: Request, res: Response): Promise<void>
   });
 
   if (!session) {
-    res.status(401).json({ error: 'Refresh token invalide ou expir?.' });
+    res.status(401).json({ error: 'Refresh token invalide ou expiré.' });
     return;
   }
   respondWithSession(res, session, rememberMe);
@@ -195,7 +195,7 @@ export async function changePassword(req: AuthenticatedRequest, res: Response): 
   const result = await mutateAuthDb((db) => {
     const user = db.users.find((u) => u.id === authenticated.userId);
     if (!user || !canAuthenticate(db, user) || !matchesSession(authenticated, user)) {
-      return { status: 401, error: 'Session expir?e ou invalide.' };
+      return { status: 401, error: 'Session expirée ou invalide.' };
     }
     const authorizedFirstLogin = user.must_change_password && authenticated.firstLogin === true;
     if (!authorizedFirstLogin && !bcrypt.compareSync(currentPassword, user.password_hash)) {
@@ -213,7 +213,7 @@ export async function changePassword(req: AuthenticatedRequest, res: Response): 
       action: 'PASSWORD_CHANGED',
       entity_type: 'user',
       entity_id: user.id,
-      details: 'Changement de mot de passe effectu?',
+      details: 'Changement de mot de passe effectué',
     });
     return { session: issueSession(db, user, rememberMe) };
   });
@@ -256,7 +256,7 @@ export async function requestPasswordOtp(req: Request, res: Response): Promise<v
   });
 
   if (!user) {
-    res.json({ ok: true, message: 'Si cette adresse existe, un code OTP valable 5 minutes a ?t? g?n?r?.' });
+    res.json({ ok: true, message: 'Si cette adresse existe, un code OTP valable 5 minutes a été généré.' });
     return;
   }
 
@@ -349,7 +349,7 @@ export async function verifyAndResetPasswordWithOtp(req: Request, res: Response)
       action: 'PASSWORD_RESET_OTP',
       entity_type: 'user',
       entity_id: user.id,
-      details: 'R?initialisation mot de passe par OTP v?rifi?',
+      details: 'Réinitialisation mot de passe par OTP vérifié',
     });
   });
 

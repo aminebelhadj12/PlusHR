@@ -31,7 +31,7 @@ export class BackupError extends Error {
 }
 
 export async function withBackupOperation<T>(operation: () => Promise<T>): Promise<T> {
-  if (busy) throw new BackupError(409, 'Une op?ration de sauvegarde est d?j? en cours.');
+  if (busy) throw new BackupError(409, 'Une opération de sauvegarde est déjà en cours.');
   busy = true;
   try {
     return await operation();
@@ -41,17 +41,17 @@ export async function withBackupOperation<T>(operation: () => Promise<T>): Promi
 }
 
 function backupDirectory(): string {
-  if (getDbMode() !== 'sqlite') throw new BackupError(409, 'Ce module n?cessite SQLite.');
+  if (getDbMode() !== 'sqlite') throw new BackupError(409, 'Ce module nécessite SQLite.');
   const dir = path.join(path.dirname(fs.realpathSync(getSqliteDbPath())), 'backups');
   for (const publicDir of ['public', 'dist']) {
     const root = path.resolve(publicDir);
     const relative = path.relative(fs.existsSync(root) ? fs.realpathSync(root) : root, dir);
     if (!relative || (!relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative))) {
-      throw new BackupError(500, 'Le r?pertoire des sauvegardes doit ?tre priv?.');
+      throw new BackupError(500, 'Le répertoire des sauvegardes doit être privé.');
     }
   }
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-  if (!fs.lstatSync(dir).isDirectory()) throw new BackupError(500, 'R?pertoire de sauvegarde invalide.');
+  if (!fs.lstatSync(dir).isDirectory()) throw new BackupError(500, 'Répertoire de sauvegarde invalide.');
   if (process.platform !== 'win32') fs.chmodSync(dir, 0o700);
   return dir;
 }
@@ -122,7 +122,7 @@ export function listBackups(): BackupInfo[] {
 
 export function verifiedBackup(id: string): string {
   const { file } = backupFile(backupDirectory(), id);
-  if (!isIntact(file)) throw new BackupError(422, 'L?int?grit? de la sauvegarde est invalide.');
+  if (!isIntact(file)) throw new BackupError(422, 'L’intégrité de la sauvegarde est invalide.');
   return file;
 }
 
@@ -225,7 +225,7 @@ function schemaSignature(db: Database.Database): unknown[] {
 function prepareRestore(stage: Database.Database, live: Database.Database, id: string, preBackup: string, actor: Actor): void {
   verifyIntegrity(stage);
   if (JSON.stringify(schemaSignature(stage)) !== JSON.stringify(schemaSignature(live))) {
-    throw new BackupError(422, 'Cette sauvegarde utilise un sch?ma SQLite incompatible.');
+    throw new BackupError(422, 'Cette sauvegarde utilise un schéma SQLite incompatible.');
   }
   const currentUsers = live.prepare('SELECT * FROM users').all() as Array<Record<string, SqlValue>>;
   const currentById = new Map(currentUsers.map((user) => [user.id, user]));
@@ -234,7 +234,7 @@ function prepareRestore(stage: Database.Database, live: Database.Database, id: s
   const snapshotUsers = stage.prepare('SELECT id, company_id FROM users').all() as Array<Record<string, SqlValue>>;
   const actorUser = currentById.get(actor.user_id ?? null);
   if (!actorUser || actorUser.role_code !== 'SUPER_ADMIN' || actorUser.is_active !== 1) {
-    throw new BackupError(403, 'Acc?s administrateur requis.');
+    throw new BackupError(403, 'Accès administrateur requis.');
   }
 
   stage.transaction(() => {
@@ -296,7 +296,7 @@ function prepareRestore(stage: Database.Database, live: Database.Database, id: s
 function swapDatabase(stage: string, target: string): void {
   const live = getSqliteDb();
   const [checkpoint] = live.pragma('wal_checkpoint(TRUNCATE)') as Array<{ busy: number }>;
-  if (checkpoint.busy) throw new BackupError(409, 'La base SQLite est occup?e. R?essayez ult?rieurement.');
+  if (checkpoint.busy) throw new BackupError(409, 'La base SQLite est occupée. Réessayez ultérieurement.');
   closeSqliteDb();
   if (['-wal', '-shm', '-journal'].some((suffix) => fs.existsSync(target + suffix))) {
     throw new BackupError(409, 'Une autre connexion SQLite utilise la base.');
@@ -312,7 +312,7 @@ export async function restoreBackup(id: string, actor: Actor, response: Response
     let stageFile: string | undefined;
     try {
       getRealtimeIo()?.disconnectSockets(true);
-      if (!await drainApiRequests(response)) throw new BackupError(409, 'Des requ?tes sont encore en cours. R?essayez.');
+      if (!await drainApiRequests(response)) throw new BackupError(409, 'Des requêtes sont encore en cours. Réessayez.');
       await waitForDbWrites();
       authorize();
       const live = getSqliteDb();

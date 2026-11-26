@@ -10,7 +10,7 @@ export function isInMaintenance(): boolean {
 
 export const trackApiRequests: RequestHandler = (_req, res, next) => {
   if (maintenance) {
-    res.set('Retry-After', '30').status(503).json({ error: 'Restauration en cours. R?essayez dans quelques instants.' });
+    res.set('Retry-After', '30').status(503).json({ error: 'Restauration en cours. Réessayez dans quelques instants.' });
     return;
   }
 

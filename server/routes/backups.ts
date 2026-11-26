@@ -13,7 +13,7 @@ const passwordLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true,
-  message: { error: 'Trop de tentatives. R?essayez plus tard.' },
+  message: { error: 'Trop de tentatives. Réessayez plus tard.' },
 });
 
 backupsRouter.use((_req, res, next) => {
@@ -34,7 +34,7 @@ function authenticatedActor(req: AuthenticatedRequest) {
     SELECT id, full_name, password_hash, must_change_password
     FROM users WHERE id = ? AND role_code = 'SUPER_ADMIN' AND is_active = 1
   `).get(req.user?.userId) as { id: string; full_name: string; password_hash: string; must_change_password: number } | undefined;
-  if (!user || user.must_change_password) throw new BackupError(403, 'Acc?s administrateur requis.');
+  if (!user || user.must_change_password) throw new BackupError(403, 'Accès administrateur requis.');
   return user;
 }
 
@@ -42,7 +42,7 @@ function reauthenticate(req: AuthenticatedRequest) {
   try {
     verifyAccessToken(req.headers.authorization!.slice(7).trim());
   } catch {
-    throw new BackupError(403, 'Session administrateur expir?e ou invalide.');
+    throw new BackupError(403, 'Session administrateur expirée ou invalide.');
   }
   const user = authenticatedActor(req);
   const password = req.body?.password;
@@ -58,7 +58,7 @@ function handle(handler: (req: AuthenticatedRequest, res: Response) => Promise<v
       if (!(error instanceof BackupError)) console.error('[+HR Backup]', error);
       if (!res.headersSent && !res.destroyed) {
         res.status(error instanceof BackupError ? error.status : 500)
-          .json({ error: error instanceof BackupError ? error.message : 'L?op?ration de sauvegarde a ?chou?.' });
+          .json({ error: error instanceof BackupError ? error.message : 'L’opération de sauvegarde a échoué.' });
       }
     });
   };
@@ -98,7 +98,7 @@ backupsRouter.post('/:id/restore', passwordLimiter, handle(async (req, res) => {
   const preRestoreBackup = await restoreBackup(id, {
     user_id: user.id, user_name: user.full_name, ip_address: req.ip,
   }, res, () => {
-    if (res.destroyed) throw new BackupError(409, 'La demande de restauration a ?t? interrompue.');
+    if (res.destroyed) throw new BackupError(409, 'La demande de restauration a été interrompue.');
     reauthenticate(req);
   });
   clearAuthCookies(res);

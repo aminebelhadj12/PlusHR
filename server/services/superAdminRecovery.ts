@@ -54,7 +54,7 @@ export function recoverSuperAdmin(): 'recovered' | 'already-completed' {
     db.prepare('INSERT INTO super_admin_recovery (id, user_id, recovered_at) VALUES (1, ?, ?)').run(account.id, now);
     db.prepare(`
       INSERT INTO audit_logs (id, user_id, user_name, action, entity_type, entity_id, details, created_at)
-      VALUES (?, ?, ?, 'SUPER_ADMIN_RECOVERED', 'user', ?, 'R?cup?ration unique au d?marrage', ?)
+      VALUES (?, ?, ?, 'SUPER_ADMIN_RECOVERED', 'user', ?, 'Récupération unique au démarrage', ?)
     `).run(randomUUID(), account.id, account.full_name, account.id, now);
     return 'recovered';
   }).immediate();

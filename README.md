@@ -11,7 +11,7 @@
 1. **Couche Présentation (Frontend)** : React 19, TypeScript, Vite, Tailwind CSS v4, React Router, Recharts, Socket.io-client, Lucide React, `jsPDF` + `jspdf-autotable`, `xlsx`. Support complet **Français / Anglais / Arabe (RTL)** et **Mode Clair / Sombre**.
 2. **Couche Application (Backend)** : Node.js, Express, REST API, Socket.io (port `3000`), `@google/genai` (côté serveur uniquement), JWT (`jsonwebtoken`) + cookies `HttpOnly`, `bcryptjs`, `multer`, `express-rate-limit`.
 3. **Couche Données (Database)** :
-   - **SQLite (`better-sqlite3` — défaut en développement)** : création automatique de `plushr.db`, initialisation du sch?ma relationnel (`database/migrations/sqlite_schema.sql`), indexation et jeu de données de démonstration injecté automatiquement au démarrage (aucun serveur MySQL ou SMTP requis).
+   - **SQLite (`better-sqlite3` — défaut en développement)** : création automatique de `plushr.db`, initialisation du schéma relationnel (`database/migrations/sqlite_schema.sql`), indexation et jeu de données de démonstration injecté automatiquement au démarrage (aucun serveur MySQL ou SMTP requis).
    - **MySQL (optionnel pour déploiement dédié)** : schéma relationnel complet (`database/migrations/schema.sql`) et jeu de données SQL (`database/seeds/seed.sql`) activables via `DB_MODE=mysql`.
 
 ---
