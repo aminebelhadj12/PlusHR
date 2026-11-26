@@ -126,9 +126,9 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           collapsed ? 'w-[72px]' : 'w-[256px]'
         }`}
       >
-        <div className="h-16 px-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
+        <div className={`h-16 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 ${collapsed ? 'px-1.5' : 'px-4'}`}>
           <Link to="/" className="focus:outline-none">
-            <BrandLogo compact={collapsed} />
+            <BrandLogo variant={collapsed ? 'icon' : 'icon-with-name'} />
           </Link>
           <button
             type="button"
@@ -193,7 +193,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           <div className="fixed inset-0 bg-slate-950/50" onClick={() => setMobileOpen(false)} />
           <aside className="relative w-72 max-w-[85vw] bg-white dark:bg-slate-900 h-full flex flex-col border-e border-slate-200 dark:border-slate-800 z-10">
             <div className="h-16 px-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
-              <BrandLogo />
+              <BrandLogo variant="icon-with-name" />
               <button type="button" onClick={() => setMobileOpen(false)} className="p-2 text-slate-500">
                 <X className="w-5 h-5" />
               </button>
@@ -233,6 +233,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
             >
               <Menu className="w-5 h-5" />
             </button>
+            <BrandLogo variant="icon" />
             <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm min-w-0">
               <Link to="/" className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 whitespace-nowrap">
                 +HR
