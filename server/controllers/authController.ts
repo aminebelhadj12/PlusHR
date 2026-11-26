@@ -9,6 +9,7 @@ import {
   matchesSession,
   clearAuthCookies,
   getRefreshSecret,
+  getJwtSecret,
   setAuthCookies,
   signAccessToken,
   signRefreshToken,
@@ -18,7 +19,9 @@ import jwt from 'jsonwebtoken';
 import { isStrongPassword, isValidEmail, sanitizeText } from '../validators/validators.js';
 
 import { demoPasswords, isDemoModeEnabled } from '../config/demoAccounts.js';
-import { refreshDigest, revokeUserSessions } from '../services/authSecurity.js';
+import { hasDefaultDemoPassword, refreshDigest, revokeUserSessions } from '../services/authSecurity.js';
+import { getSqliteDb } from '../config/database.js';
+import { getBrevoConfig, sendPasswordResetEmail } from '../services/brevoEmail.js';
 import { getRealtimeIo } from '../services/realtimeService.js';
 
 function issueSession(db: DbSchema, user: DbUser, rememberMe: boolean, firstLogin = user.must_change_password) {
@@ -226,122 +229,140 @@ export async function changePassword(req: AuthenticatedRequest, res: Response): 
   respondWithSession(res, result.session, rememberMe);
 }
 
+const otpValidity = 5 * 60_000;
+const otpRequestWindow = 15 * 60_000;
+const invalidOtpMessage = 'Code ou demande de réinitialisation invalide ou expiré.';
+const otpPrefix = 'otp-v1:';
+const resetPrefix = 'reset-v1:';
+
+function readRecoveryEmail(input: unknown): string | null {
+  if (typeof input !== 'string') return null;
+  const email = input.trim();
+  if (email.length > 254 || !isValidEmail(email) || /[<>,;\x00-\x1f\x7f]/.test(email)) return null;
+  return email.toLowerCase();
+}
+
+function recoveryDigest(prefix: string, recordId: string, companyId: string | null, secret: string): string {
+  return prefix + crypto.createHmac('sha256', getJwtSecret())
+    .update(JSON.stringify([prefix, recordId, companyId, secret])).digest('hex');
+}
+
+function matchesRecoveryDigest(stored: string, expected: string): boolean {
+  const digest = Buffer.from(stored);
+  const supplied = Buffer.from(expected);
+  return digest.length === supplied.length && crypto.timingSafeEqual(digest, supplied);
+}
+
 export async function requestPasswordOtp(req: Request, res: Response): Promise<void> {
-  const email = sanitizeText(req.body?.email, 160).toLowerCase();
-  if (!isValidEmail(email)) {
-    res.status(400).json({ error: 'Adresse email professionnelle invalide.' });
-    return;
-  }
-
-  const otpCode = String(crypto.randomInt(100000, 1000000));
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
-
-  const user = await mutateAuthDb((db) => {
-    const user = db.users.find((u) => u.email.toLowerCase() === email && canAuthenticate(db, u));
-    if (!user) return null;
-    for (const otp of db.password_reset_otps) {
-      if (otp.user_id === user.id && !otp.used_at) otp.used_at = new Date().toISOString();
-    }
-    db.password_reset_otps.push({
-      id: newId('otp'),
-      user_id: user.id,
-      email: user.email,
-      otp_hash: bcrypt.hashSync(otpCode, 8),
-      attempts: 0,
-      expires_at: expiresAt,
-      used_at: null,
-      created_at: new Date().toISOString(),
-    });
-    return user;
+  res.set('Cache-Control', 'no-store').json({
+    ok: true, message: 'Si un compte actif est associé à cette adresse, vous recevrez un code de réinitialisation par e-mail.',
   });
 
-  if (!user) {
-    res.json({ ok: true, message: 'Si cette adresse existe, un code OTP valable 5 minutes a été généré.' });
-    return;
-  }
+  const config = getBrevoConfig();
+  const email = readRecoveryEmail(req.body?.email);
+  if (!config || !email) return;
 
-  const smtpConfigured = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER);
-  if (!smtpConfigured) {
-    console.log(`[+HR OTP DEV] Code OTP pour ${user.email} (valable 5 min): ${otpCode}`);
-  }
+  // Finish the generic HTTP response before doing any account-dependent work.
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  const issued = await mutateAuthDb((db) => {
+    const users = db.users.filter((user) => readRecoveryEmail(user.email) === email);
+    const user = users.length === 1 ? users[0] : undefined;
+    if (!user || !canAuthenticate(db, user)) return null;
 
-  res.json({
-    ok: true,
-    smtpConfigured,
-    message: smtpConfigured
-      ? 'Un code à 6 chiffres a été envoyé à votre adresse professionnelle.'
-      : 'Service SMTP non configuré : en mode développement, le code OTP est disponible dans la console serveur ou ci-dessous.',
-    ...(isDemoModeEnabled() && !smtpConfigured ? { devOtpPreview: otpCode } : {}),
+    const now = Date.now();
+    const prior = db.password_reset_otps.filter((record) => record.user_id === user.id);
+    const recent = prior.filter((record) => Date.parse(record.created_at) > now - otpRequestWindow);
+    if (recent.length >= 3 || recent.some((record) => Date.parse(record.created_at) > now - 60_000)) return null;
+    if (hasDefaultDemoPassword(user)) return null;
+
+    const code = String(crypto.randomInt(1_000_000)).padStart(6, '0');
+    const id = newId('otp');
+    const digest = recoveryDigest(otpPrefix, id, user.company_id, code);
+    const createdAt = new Date(now).toISOString();
+    for (const record of prior) {
+      if (!record.used_at) record.used_at = createdAt;
+    }
+    db.password_reset_otps.push({
+      id,
+      user_id: user.id,
+      email: user.email,
+      otp_hash: 'pending:' + digest,
+      attempts: 0,
+      expires_at: new Date(now + otpValidity).toISOString(),
+      used_at: null,
+      created_at: createdAt,
+    });
+    return { id, code, digest, userId: user.id, companyId: user.company_id };
+  });
+  if (!issued) return;
+
+  // Re-read the authoritative recipient and account state immediately before calling Brevo.
+  const recipient = getSqliteDb().prepare(`
+    SELECT u.email, u.preferred_lang FROM users u
+    JOIN password_reset_otps o ON o.user_id = u.id AND o.email = u.email
+    WHERE u.id = ? AND u.company_id IS ? AND o.id = ? AND o.used_at IS NULL AND o.expires_at > ? AND u.is_active = 1
+      AND (u.company_id IS NULL OR EXISTS (
+        SELECT 1 FROM companies c WHERE c.id = u.company_id AND c.status <> 'suspended'
+      ))
+  `).get(issued.userId, issued.companyId, issued.id, new Date().toISOString()) as { email: string; preferred_lang: string } | undefined;
+  const delivered = recipient ? await sendPasswordResetEmail(config, recipient.email, recipient.preferred_lang, issued.code) : false;
+  await mutateAuthDb((db) => {
+    const record = db.password_reset_otps.find((otp) => otp.id === issued.id && !otp.used_at);
+    if (!record) return;
+    const user = db.users.find((entry) => entry.id === record.user_id && entry.email === record.email);
+    if (delivered && user && user.company_id === issued.companyId && canAuthenticate(db, user) && Date.parse(record.expires_at) > Date.now()) {
+      record.otp_hash = issued.digest;
+    } else {
+      record.used_at = new Date().toISOString();
+    }
   });
 }
 
 export async function verifyAndResetPasswordWithOtp(req: Request, res: Response): Promise<void> {
-  const email = sanitizeText(req.body?.email, 160).toLowerCase();
-  const code = sanitizeText(req.body?.code, 10);
+  res.set('Cache-Control', 'no-store');
+  const email = readRecoveryEmail(req.body?.email);
+  const code = typeof req.body?.code === 'string' ? req.body.code : '';
+  const token = typeof req.body?.resetToken === 'string' ? req.body.resetToken : '';
   const newPassword = typeof req.body?.newPassword === 'string' ? req.body.newPassword : '';
-  const verifyOnly = Boolean(req.body?.verifyOnly);
+  const verifyOnly = req.body?.verifyOnly === true;
 
-  if (!isValidEmail(email) || !/^\d{6}$/.test(code)) {
-    res.status(400).json({ error: 'Email ou code OTP à 6 chiffres invalide.' });
+  if (!getBrevoConfig() || !email || (token ? verifyOnly || !/^[a-f0-9]{64}$/.test(token) : !/^\d{6}$/.test(code))) {
+    res.status(400).json({ error: invalidOtpMessage });
+    return;
+  }
+  if (!verifyOnly && (!isStrongPassword(newPassword) || Buffer.byteLength(newPassword, 'utf8') > 72)) {
+    res.status(400).json({ error: 'Le nouveau mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre, avec un maximum de 72 octets.' });
+    return;
+  }
+  if (!verifyOnly && !isDemoModeEnabled() && demoPasswords.has(newPassword)) {
+    res.status(400).json({ error: 'Choisissez un autre mot de passe.' });
     return;
   }
 
-  let errorMsg: string | null = null;
-  let statusCode = 200;
-  let resetUserId: string | undefined;
+  const result = await mutateAuthDb((db) => {
+    const users = db.users.filter((user) => readRecoveryEmail(user.email) === email);
+    const user = users.length === 1 ? users[0] : undefined;
+    if (!user || !canAuthenticate(db, user)) return null;
+    const record = db.password_reset_otps.find((otp) =>
+      otp.user_id === user.id && otp.email === user.email && !otp.used_at &&
+      otp.otp_hash.startsWith(token ? resetPrefix : otpPrefix)
+    );
+    if (!record || !(Date.parse(record.expires_at) > Date.now()) || record.attempts >= 5) return null;
 
-  await mutateAuthDb((db) => {
-    const otpRecord = [...db.password_reset_otps]
-      .reverse()
-      .find((o) => o.email.toLowerCase() === email && !o.used_at);
-
-    const user = db.users.find((u) => u.id === otpRecord?.user_id && u.email.toLowerCase() === email);
-    if (!otpRecord || !user || !canAuthenticate(db, user)) {
-      statusCode = 400;
-      errorMsg = 'Aucun code OTP actif pour cet email.';
-      return;
+    if (!matchesRecoveryDigest(record.otp_hash, recoveryDigest(token ? resetPrefix : otpPrefix, record.id, user.company_id, token || code))) {
+      if (!token) record.attempts += 1;
+      return null;
     }
-
-    if (Date.now() > Date.parse(otpRecord.expires_at)) {
-      statusCode = 400;
-      errorMsg = 'Code OTP expiré (validité 5 minutes dépassée).';
-      return;
-    }
-
-    if (otpRecord.attempts >= 5) {
-      statusCode = 429;
-      errorMsg = 'Nombre maximal de tentatives atteint (5). Veuillez demander un nouveau code.';
-      return;
-    }
-
-    if (!bcrypt.compareSync(code, otpRecord.otp_hash)) {
-      otpRecord.attempts += 1;
-      statusCode = 400;
-      errorMsg = `Code incorrect. Tentatives restantes : ${Math.max(0, 5 - otpRecord.attempts)}.`;
-      return;
-    }
-
     if (verifyOnly) {
-      return;
-    }
-
-    if (!isStrongPassword(newPassword)) {
-      statusCode = 400;
-      errorMsg = 'Le nouveau mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre.';
-      return;
-    }
-
-    if (!isDemoModeEnabled() && demoPasswords.has(newPassword)) {
-      statusCode = 400;
-      errorMsg = 'Choisissez un autre mot de passe.';
-      return;
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      record.otp_hash = recoveryDigest(resetPrefix, record.id, user.company_id, resetToken);
+      return { resetToken };
     }
 
     user.password_hash = bcrypt.hashSync(newPassword, 10);
     user.must_change_password = false;
     user.updated_at = new Date().toISOString();
     revokeUserSessions(db, user.id, user.updated_at);
-    resetUserId = user.id;
     logAudit(db, {
       company_id: user.company_id,
       user_id: user.id,
@@ -351,15 +372,19 @@ export async function verifyAndResetPasswordWithOtp(req: Request, res: Response)
       entity_id: user.id,
       details: 'Réinitialisation mot de passe par OTP vérifié',
     });
+    return { userId: user.id };
   });
 
-  if (errorMsg) {
-    res.status(statusCode).json({ error: errorMsg });
+  if (!result) {
+    res.status(400).json({ error: invalidOtpMessage });
     return;
   }
-
-  if (resetUserId) getRealtimeIo()?.in(`user:${resetUserId}`).disconnectSockets(true);
-  res.json({ ok: true, message: verifyOnly ? 'Code OTP vérifié.' : 'Mot de passe réinitialisé avec succès.' });
+  if (result.resetToken) {
+    res.json({ ok: true, message: 'Code OTP vérifié.', resetToken: result.resetToken });
+    return;
+  }
+  getRealtimeIo()?.in(`user:${result.userId}`).disconnectSockets(true);
+  res.json({ ok: true, message: 'Mot de passe réinitialisé avec succès.' });
 }
 
 export async function updateMyProfile(req: AuthenticatedRequest, res: Response): Promise<void> {

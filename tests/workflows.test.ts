@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import bcrypt from 'bcryptjs';
 import { io as createSocketClient } from 'socket.io-client';
 import { createAppServer } from '../server.js';
 import { reloadDbFromSqlite, resetDemoDatabase, mutateDb } from '../server/repositories/dataStore.js';
+import { mockBrevo } from './mockBrevo.js';
 import { isolateTestDatabase } from './isolatedDatabase.js';
 import { getSqliteDb, getSqliteDbPath } from '../server/config/database.js';
 
@@ -43,6 +45,10 @@ function nextWeekday(offsetDays = 10): string {
 async function runTests() {
   console.log('=== +HR Complete Functional Test Suite ===');
   resetDemoDatabase();
+  const employeePassword = 'Workflow#Employee2026';
+  await mutateDb((db) => {
+    db.users.find((user) => user.matricule === 'ATL-010')!.password_hash = bcrypt.hashSync(employeePassword, 6);
+  });
 
   const { httpServer } = await createAppServer({ skipVite: true, scheduleBackups: false });
   await new Promise<void>((resolve) => httpServer.listen(0, '127.0.0.1', resolve));
@@ -111,7 +117,7 @@ async function runTests() {
 
     const loginEmp = await request(baseUrl, '/api/auth/login', {
       method: 'POST',
-      body: { identifier: 'ATL-010', password: 'Atlas#Emp2026!' },
+      body: { identifier: 'ATL-010', password: employeePassword },
     });
     assert.equal(loginEmp.status, 200);
     assert.equal(loginEmp.data.user.role_code, 'EMPLOYEE');
@@ -150,15 +156,17 @@ async function runTests() {
       body: { email: 'employe@atlas-industrial.ma' },
     });
     assert.equal(otpReq.status, 200);
-    assert.ok(otpReq.data.devOtpPreview);
+    assert.deepEqual(Object.keys(otpReq.data).sort(), ['message', 'ok']);
+    const otpCode = await emailMock.waitForCode('employe@atlas-industrial.ma', 0);
     const otpVerify = await request(baseUrl, '/api/auth/otp/verify-reset', {
       method: 'POST',
-      body: { email: 'employe@atlas-industrial.ma', code: otpReq.data.devOtpPreview, verifyOnly: true },
+      body: { email: 'employe@atlas-industrial.ma', code: otpCode, verifyOnly: true },
     });
     assert.equal(otpVerify.status, 200);
+    assert.match(otpVerify.data.resetToken, /^[a-f0-9]{64}$/);
     const otpReset = await request(baseUrl, '/api/auth/otp/verify-reset', {
       method: 'POST',
-      body: { email: 'employe@atlas-industrial.ma', code: otpReq.data.devOtpPreview, newPassword: 'Atlas#Emp2026!' },
+      body: { email: 'employe@atlas-industrial.ma', resetToken: otpVerify.data.resetToken, newPassword: 'Atlas#Emp2026!' },
     });
     assert.equal(otpReset.status, 200);
     assert.equal((await request(baseUrl, '/api/auth/me', { token: empToken })).status, 401);
@@ -712,9 +720,13 @@ async function runTests() {
 }
 
 const cleanup = isolateTestDatabase();
+const emailMock = mockBrevo();
 runTests()
   .catch((err) => {
     console.error('TEST SUITE FAILED:', err);
     process.exitCode = 1;
   })
-  .finally(cleanup);
+  .finally(() => {
+    emailMock.restore();
+    cleanup();
+  });

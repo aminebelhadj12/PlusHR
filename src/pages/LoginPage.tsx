@@ -32,6 +32,7 @@ export const LoginPage: React.FC = () => {
   const [otpStep, setOtpStep] = useState<'email' | 'verify' | 'reset'>('email');
   const [otpEmail, setOtpEmail] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [otpNotice, setOtpNotice] = useState('');
@@ -75,11 +76,11 @@ export const LoginPage: React.FC = () => {
     setOtpNotice('');
     setOtpBusy(true);
     try {
-      const res = await apiRequest<{ message: string; devOtpPreview?: string }>('/api/auth/otp/request', {
+      const res = await apiRequest<{ message: string }>('/api/auth/otp/request', {
         method: 'POST',
         body: JSON.stringify({ email: otpEmail }),
       });
-      setOtpNotice(res.devOtpPreview ? `${res.message} (Code dev : ${res.devOtpPreview})` : res.message);
+      setOtpNotice(res.message);
       setOtpStep('verify');
     } catch (err) {
       setOtpError((err as Error).message);
@@ -93,10 +94,12 @@ export const LoginPage: React.FC = () => {
     setOtpError('');
     setOtpBusy(true);
     try {
-      await apiRequest('/api/auth/otp/verify-reset', {
+      const response = await apiRequest<{ resetToken: string }>('/api/auth/otp/verify-reset', {
         method: 'POST',
         body: JSON.stringify({ email: otpEmail, code: otpCode, verifyOnly: true }),
       });
+      setResetToken(response.resetToken);
+      setOtpCode('');
       setOtpStep('reset');
     } catch (err) {
       setOtpError((err as Error).message);
@@ -116,11 +119,12 @@ export const LoginPage: React.FC = () => {
     try {
       await apiRequest('/api/auth/otp/verify-reset', {
         method: 'POST',
-        body: JSON.stringify({ email: otpEmail, code: otpCode, newPassword }),
+        body: JSON.stringify({ email: otpEmail, resetToken, newPassword }),
       });
       addToast('Mot de passe réinitialisé. Connectez-vous maintenant.', 'success');
       setOtpModalOpen(false);
       setOtpStep('email');
+      setResetToken('');
       setOtpCode('');
       setNewPassword('');
       setConfirmPassword('');
@@ -208,6 +212,11 @@ export const LoginPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
+                  setOtpCode('');
+                  setResetToken('');
+                  setOtpNotice('');
+                  setNewPassword('');
+                  setConfirmPassword('');
                   setOtpModalOpen(true);
                   setOtpStep('email');
                   setOtpError('');
@@ -283,7 +292,11 @@ export const LoginPage: React.FC = () => {
       </div>
 
       {/* OTP Password Recovery Modal */}
-      <Modal open={otpModalOpen} title="Récupération par code OTP" onClose={() => setOtpModalOpen(false)}>
+      <Modal open={otpModalOpen} title="Récupération par code OTP" onClose={() => {
+        setOtpModalOpen(false);
+        setResetToken('');
+        setOtpCode('');
+      }}>
         {otpError && (
           <div className="mb-3 p-2.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-xs text-red-700 dark:text-red-300">
             {otpError}
@@ -298,7 +311,7 @@ export const LoginPage: React.FC = () => {
         {otpStep === 'email' && (
           <form onSubmit={handleRequestOtp} className="space-y-4">
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Saisissez votre adresse email professionnelle. Un code à 6 chiffres valable 5 minutes sera généré.
+              Saisissez votre adresse e-mail professionnelle. Le code envoyé par e-mail est valable 5 minutes.
             </p>
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Email professionnel</label>
@@ -331,7 +344,8 @@ export const LoginPage: React.FC = () => {
                 maxLength={6}
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                placeholder="123456"
+                inputMode="numeric"
+                autoComplete="one-time-code"
                 className="w-full px-3 py-2 text-center font-mono text-lg tracking-widest border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800"
               />
             </div>

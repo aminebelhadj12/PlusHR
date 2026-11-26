@@ -20,6 +20,15 @@ const authLimiter = rateLimit({
   message: { error: 'Trop de tentatives. Veuillez réessayer dans quelques minutes.' },
 });
 
+const otpRequestLimiter = rateLimit({
+  windowMs: 15 * 60_000, limit: 10, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Trop de tentatives. Veuillez réessayer dans quelques minutes.' },
+});
+const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60_000, limit: 30, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Trop de tentatives. Veuillez réessayer dans quelques minutes.' },
+});
+
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 300,
@@ -58,8 +67,8 @@ apiRouter.post('/auth/login', authLimiter, authHandler(authCtrl.login));
 apiRouter.post('/auth/logout', authHandler(authCtrl.logout));
 apiRouter.post('/auth/refresh', authHandler(authCtrl.refreshSession));
 apiRouter.get('/auth/demo-accounts', authCtrl.getDemoAccounts);
-apiRouter.post('/auth/otp/request', authLimiter, authHandler(authCtrl.requestPasswordOtp));
-apiRouter.post('/auth/otp/verify-reset', authLimiter, authHandler(authCtrl.verifyAndResetPasswordWithOtp));
+apiRouter.post('/auth/otp/request', otpRequestLimiter, authHandler(authCtrl.requestPasswordOtp));
+apiRouter.post('/auth/otp/verify-reset', otpVerifyLimiter, authHandler(authCtrl.verifyAndResetPasswordWithOtp));
 
 apiRouter.get('/auth/me', requireAuth, authCtrl.getMe);
 apiRouter.post('/auth/change-password', requireAuth, authHandler(authCtrl.changePassword));

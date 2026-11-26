@@ -19,6 +19,12 @@ export function revokeUserSessions(db: DbSchema, userId: string, now: string): v
   }
 }
 
+export function hasDefaultDemoPassword(user: DbSchema['users'][number]): boolean {
+  if (user.id !== 'user-superadmin' && !/^user-emp-(atlas|atl|mgt)-[0-9]+$/.test(user.id)) return false;
+  return user.password_hash !== disabledDemoPassword &&
+    [...demoPasswords].some((password) => bcrypt.compareSync(password, user.password_hash));
+}
+
 export async function migrateAuthSecurity(): Promise<void> {
   await mutateAuthDb((db) => {
     const now = new Date().toISOString();
@@ -29,9 +35,7 @@ export async function migrateAuthSecurity(): Promise<void> {
 
     if (isDemoModeEnabled()) return;
     for (const user of db.users) {
-      if (user.id !== 'user-superadmin' && !/^user-emp-(atl|mgt)-[0-9]+$/.test(user.id)) continue;
-      if (user.password_hash === disabledDemoPassword) continue;
-      if (![...demoPasswords].some((password) => bcrypt.compareSync(password, user.password_hash))) continue;
+      if (!hasDefaultDemoPassword(user)) continue;
 
       // Preserve linked records and accounts whose passwords have already changed.
       user.password_hash = disabledDemoPassword;
