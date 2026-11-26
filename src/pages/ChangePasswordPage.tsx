@@ -7,7 +7,7 @@ import { apiRequest } from '../services/api';
 import type { AuthUser } from '../types';
 
 export const ChangePasswordPage: React.FC = () => {
-  const { user, updateUser, addToast } = useApp();
+  const { user, setSession, addToast } = useApp();
   const navigate = useNavigate();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -24,11 +24,11 @@ export const ChangePasswordPage: React.FC = () => {
     }
     setBusy(true);
     try {
-      const res = await apiRequest<{ user: AuthUser }>('/api/auth/change-password', {
+      const res = await apiRequest<{ user: AuthUser; accessToken: string }>('/api/auth/change-password', {
         method: 'POST',
         body: JSON.stringify({ currentPassword, newPassword }),
       });
-      updateUser(res.user);
+      setSession(res.user, res.accessToken);
       addToast('Mot de passe mis à jour avec succès.', 'success');
       navigate('/');
     } catch (err) {

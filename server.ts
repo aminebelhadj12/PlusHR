@@ -6,12 +6,14 @@ import cookieParser from 'cookie-parser';
 import { createServer as createViteServer } from 'vite';
 import { initDatabaseConnection } from './server/config/database.js';
 import { loadDb } from './server/repositories/dataStore.js';
+import { migrateAuthSecurity } from './server/services/authSecurity.js';
 import { initRealtimeServer } from './server/services/realtimeService.js';
 import { apiRouter } from './server/routes/api.js';
 
 export async function createAppServer(options: { skipVite?: boolean } = {}) {
   await initDatabaseConnection();
   loadDb();
+  await migrateAuthSecurity();
 
   const app = express();
   const httpServer = http.createServer(app);

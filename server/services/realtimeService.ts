@@ -42,6 +42,10 @@ export function initRealtimeServer(httpServer: HttpServer): SocketServer {
       return;
     }
 
+    const expiresIn = (user.exp ?? 0) * 1000 - Date.now();
+    const expiryTimer = setTimeout(() => socket.disconnect(true), Math.max(0, expiresIn));
+    expiryTimer.unref();
+
     socket.join(`user:${user.userId}`);
     if (user.companyId) {
       socket.join(`company:${user.companyId}`);
@@ -80,6 +84,7 @@ export function initRealtimeServer(httpServer: HttpServer): SocketServer {
     });
 
     socket.on('disconnect', () => {
+      clearTimeout(expiryTimer);
       const entry = onlineUsers.get(user.userId);
       if (entry) {
         entry.sockets.delete(socket.id);

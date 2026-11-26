@@ -31,17 +31,27 @@ async function rawFetch(url: string, options: RequestInit = {}): Promise<Respons
   });
 }
 
+let pendingRefresh: Promise<boolean> | undefined;
+
+function refreshAccessToken(): Promise<boolean> {
+  pendingRefresh ??= (async () => {
+    const response = await rawFetch('/api/auth/refresh', { method: 'POST' });
+    if (!response.ok) return false;
+    const data = (await response.json()) as { accessToken?: string };
+    if (!data.accessToken) return false;
+    inMemoryAccessToken = data.accessToken;
+    return true;
+  })().finally(() => { pendingRefresh = undefined; });
+  return pendingRefresh;
+}
+
 export async function apiRequest<T = unknown>(url: string, options: RequestInit = {}): Promise<T> {
+  const previousToken = inMemoryAccessToken;
   let res = await rawFetch(url, options);
 
   if (res.status === 401 && !url.includes('/auth/login') && !url.includes('/auth/refresh')) {
-    const refreshRes = await rawFetch('/api/auth/refresh', { method: 'POST' });
-    if (refreshRes.ok) {
-      const data = (await refreshRes.json()) as { accessToken?: string };
-      if (data.accessToken) {
-        inMemoryAccessToken = data.accessToken;
-        res = await rawFetch(url, options);
-      }
+    if ((inMemoryAccessToken && previousToken !== inMemoryAccessToken) || await refreshAccessToken()) {
+      res = await rawFetch(url, options);
     }
   }
 

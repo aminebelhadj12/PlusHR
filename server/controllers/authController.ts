@@ -1,9 +1,12 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { loadDb, mutateDb, newId, logAudit } from '../repositories/dataStore.js';
+import { loadDb, mutateDb, mutateAuthDb, newId, logAudit, type DbSchema, type DbUser } from '../repositories/dataStore.js';
 import {
   AuthenticatedRequest,
+  canAuthenticate,
+  createSessionPayload,
+  matchesSession,
   clearAuthCookies,
   getRefreshSecret,
   setAuthCookies,
@@ -14,8 +17,27 @@ import {
 import jwt from 'jsonwebtoken';
 import { isStrongPassword, isValidEmail, sanitizeText } from '../validators/validators.js';
 
-export function isDemoModeEnabled(): boolean {
-  return process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEMO_ACCOUNTS !== 'false';
+import { demoPasswords, isDemoModeEnabled } from '../config/demoAccounts.js';
+import { refreshDigest, revokeUserSessions } from '../services/authSecurity.js';
+import { getRealtimeIo } from '../services/realtimeService.js';
+
+function issueSession(db: DbSchema, user: DbUser, rememberMe: boolean, firstLogin = user.must_change_password) {
+  const payload = { ...createSessionPayload(user, rememberMe), firstLogin };
+  const accessToken = signAccessToken(payload, rememberMe);
+  const refreshToken = signRefreshToken(payload);
+  db.refresh_tokens.push({
+    id: crypto.randomUUID(),
+    user_id: user.id,
+    token_hash: refreshDigest(refreshToken),
+    expires_at: new Date(Date.now() + 14 * 86400000).toISOString(),
+    revoked_at: null,
+  });
+  return { accessToken, refreshToken, user: buildAuthUserResponse(db, user) };
+}
+
+function respondWithSession(res: Response, session: ReturnType<typeof issueSession>, rememberMe: boolean): void {
+  setAuthCookies(res, session.accessToken, session.refreshToken, rememberMe);
+  res.json({ ok: true, accessToken: session.accessToken, user: session.user });
 }
 
 function buildAuthUserResponse(db: ReturnType<typeof loadDb>, user: ReturnType<typeof loadDb>['users'][number]) {
@@ -48,77 +70,53 @@ export async function login(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const db = loadDb();
-  const user = db.users.find(
-    (u) => u.email.toLowerCase() === identifier || (u.matricule && u.matricule.toLowerCase() === identifier)
-  );
-
-  if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+  if (!isDemoModeEnabled() && demoPasswords.has(password)) {
     res.status(401).json({ error: 'Identifiants invalides.' });
     return;
   }
 
-  if (!user.is_active) {
-    res.status(403).json({ error: 'Ce compte est désactivé. Contactez votre administrateur.' });
-    return;
-  }
-
-  if (user.company_id) {
-    const company = db.companies.find((c) => c.id === user.company_id);
-    if (!company || company.status === 'suspended') {
-      res.status(403).json({ error: 'L’espace de votre entreprise est actuellement suspendu.' });
-      return;
+  const result = await mutateAuthDb((db) => {
+    const user = db.users.find(
+      (u) => u.email.toLowerCase() === identifier || (u.matricule && u.matricule.toLowerCase() === identifier)
+    );
+    if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+      return { status: 401, error: 'Identifiants invalides.' };
     }
-  }
+    if (!user.is_active) {
+      return { status: 403, error: 'Ce compte est d?sactiv?. Contactez votre administrateur.' };
+    }
+    if (!canAuthenticate(db, user)) {
+      return { status: 403, error: 'L?espace de votre entreprise est actuellement suspendu.' };
+    }
 
-  const payload: JwtPayload = {
-    userId: user.id,
-    companyId: user.company_id,
-    roleCode: user.role_code,
-    email: user.email,
-  };
-
-  const accessToken = signAccessToken(payload, rememberMe);
-  const refreshToken = signRefreshToken(payload);
-
-  await mutateDb((d) => {
-    const u = d.users.find((x) => x.id === user.id);
-    if (u) u.last_login_at = new Date().toISOString();
-    d.refresh_tokens.push({
-      id: newId('rt'),
-      user_id: user.id,
-      token_hash: bcrypt.hashSync(refreshToken, 6),
-      expires_at: new Date(Date.now() + 14 * 86400000).toISOString(),
-      revoked_at: null,
-    });
-    logAudit(d, {
+    user.last_login_at = new Date().toISOString();
+    logAudit(db, {
       company_id: user.company_id,
       user_id: user.id,
       user_name: user.full_name,
       action: 'USER_LOGIN',
       entity_type: 'user',
       entity_id: user.id,
-      details: `Connexion réussie (${user.role_code})`,
+      details: `Connexion r?ussie (${user.role_code})`,
       ip_address: req.ip,
     });
+    return { session: issueSession(db, user, rememberMe) };
   });
 
-  setAuthCookies(res, accessToken, refreshToken, rememberMe);
-  res.json({
-    accessToken,
-    user: buildAuthUserResponse(loadDb(), user),
-  });
+  if (!result.session) {
+    res.status(result.status).json({ error: result.error });
+    return;
+  }
+  respondWithSession(res, result.session, rememberMe);
 }
 
-export async function logout(req: AuthenticatedRequest, res: Response): Promise<void> {
-  const refreshCookie = req.cookies?.plushr_refresh as string | undefined;
-  if (refreshCookie) {
-    await mutateDb((db) => {
-      db.refresh_tokens.forEach((rt) => {
-        if (req.user && rt.user_id === req.user.userId && !rt.revoked_at) {
-          rt.revoked_at = new Date().toISOString();
-        }
-      });
+export async function logout(req: Request, res: Response): Promise<void> {
+  const refreshCookie = req.cookies?.plushr_refresh;
+  if (typeof refreshCookie === 'string' && refreshCookie) {
+    const digest = refreshDigest(refreshCookie);
+    await mutateAuthDb((db) => {
+      const record = db.refresh_tokens.find((token) => token.token_hash === digest && !token.revoked_at);
+      if (record) record.revoked_at = new Date().toISOString();
     });
   }
   clearAuthCookies(res);
@@ -126,31 +124,46 @@ export async function logout(req: AuthenticatedRequest, res: Response): Promise<
 }
 
 export async function refreshSession(req: Request, res: Response): Promise<void> {
-  const refreshCookie = req.cookies?.plushr_refresh as string | undefined;
-  if (!refreshCookie) {
-    res.status(401).json({ error: 'Token de rafraîchissement manquant.' });
+  const refreshCookie = req.cookies?.plushr_refresh;
+  if (typeof refreshCookie !== 'string' || !refreshCookie) {
+    res.status(401).json({ error: 'Token de rafra?chissement manquant.' });
     return;
   }
+
+  let decoded: JwtPayload & { exp: number };
   try {
-    const decoded = jwt.verify(refreshCookie, getRefreshSecret()) as JwtPayload;
-    const db = loadDb();
-    const user = db.users.find((u) => u.id === decoded.userId && u.is_active);
-    if (!user) {
-      res.status(401).json({ error: 'Utilisateur introuvable ou inactif.' });
-      return;
+    decoded = jwt.verify(refreshCookie, getRefreshSecret(), {
+      algorithms: ['HS256'],
+      audience: 'plushr-refresh',
+    }) as JwtPayload & { exp: number };
+    if (typeof decoded.userId !== 'string' || typeof decoded.exp !== 'number') {
+      throw new Error('Invalid refresh claims');
     }
-    const payload: JwtPayload = {
-      userId: user.id,
-      companyId: user.company_id,
-      roleCode: user.role_code,
-      email: user.email,
-    };
-    const accessToken = signAccessToken(payload, true);
-    setAuthCookies(res, accessToken, refreshCookie, true);
-    res.json({ accessToken, user: buildAuthUserResponse(db, user) });
   } catch {
-    res.status(401).json({ error: 'Refresh token invalide ou expiré.' });
+    res.status(401).json({ error: 'Refresh token invalide ou expir?.' });
+    return;
   }
+
+  const digest = refreshDigest(refreshCookie);
+  const rememberMe = decoded.rememberMe === true;
+  const session = await mutateAuthDb((db) => {
+    const now = Date.now();
+    const record = db.refresh_tokens.find((token) => token.token_hash === digest && token.user_id === decoded.userId);
+    if (!record || record.revoked_at || !(Date.parse(record.expires_at) > now) || decoded.exp * 1000 <= now) {
+      return null;
+    }
+    const user = db.users.find((u) => u.id === record.user_id);
+    if (!user || !canAuthenticate(db, user) || !matchesSession(decoded, user)) return null;
+
+    record.revoked_at = new Date(now).toISOString();
+    return issueSession(db, user, rememberMe, decoded.firstLogin === true && user.must_change_password);
+  });
+
+  if (!session) {
+    res.status(401).json({ error: 'Refresh token invalide ou expir?.' });
+    return;
+  }
+  respondWithSession(res, session, rememberMe);
 }
 
 export function getMe(req: AuthenticatedRequest, res: Response): void {
@@ -172,38 +185,45 @@ export async function changePassword(req: AuthenticatedRequest, res: Response): 
     return;
   }
 
-  const db = loadDb();
-  const user = db.users.find((u) => u.id === req.user?.userId);
-  if (!user) {
-    res.status(404).json({ error: 'Utilisateur introuvable.' });
+  if (!isDemoModeEnabled() && demoPasswords.has(newPassword)) {
+    res.status(400).json({ error: 'Choisissez un autre mot de passe.' });
     return;
   }
 
-  if (!user.must_change_password && !bcrypt.compareSync(currentPassword, user.password_hash)) {
-    res.status(400).json({ error: 'Mot de passe actuel incorrect.' });
-    return;
-  }
-
-  await mutateDb((d) => {
-    const u = d.users.find((x) => x.id === user.id);
-    if (u) {
-      u.password_hash = bcrypt.hashSync(newPassword, 10);
-      u.must_change_password = false;
-      u.updated_at = new Date().toISOString();
+  const authenticated = req.user!;
+  const rememberMe = authenticated.rememberMe === true;
+  const result = await mutateAuthDb((db) => {
+    const user = db.users.find((u) => u.id === authenticated.userId);
+    if (!user || !canAuthenticate(db, user) || !matchesSession(authenticated, user)) {
+      return { status: 401, error: 'Session expir?e ou invalide.' };
     }
-    logAudit(d, {
+    const authorizedFirstLogin = user.must_change_password && authenticated.firstLogin === true;
+    if (!authorizedFirstLogin && !bcrypt.compareSync(currentPassword, user.password_hash)) {
+      return { status: 400, error: 'Mot de passe actuel incorrect.' };
+    }
+
+    user.password_hash = bcrypt.hashSync(newPassword, 10);
+    user.must_change_password = false;
+    user.updated_at = new Date().toISOString();
+    revokeUserSessions(db, user.id, user.updated_at);
+    logAudit(db, {
       company_id: user.company_id,
       user_id: user.id,
       user_name: user.full_name,
       action: 'PASSWORD_CHANGED',
       entity_type: 'user',
       entity_id: user.id,
-      details: 'Changement de mot de passe effectué',
+      details: 'Changement de mot de passe effectu?',
     });
+    return { session: issueSession(db, user, rememberMe) };
   });
 
-  const updated = loadDb().users.find((u) => u.id === user.id)!;
-  res.json({ ok: true, user: buildAuthUserResponse(loadDb(), updated) });
+  if (!result.session) {
+    res.status(result.status).json({ error: result.error });
+    return;
+  }
+  getRealtimeIo()?.in(`user:${authenticated.userId}`).disconnectSockets(true);
+  respondWithSession(res, result.session, rememberMe);
 }
 
 export async function requestPasswordOtp(req: Request, res: Response): Promise<void> {
@@ -213,23 +233,16 @@ export async function requestPasswordOtp(req: Request, res: Response): Promise<v
     return;
   }
 
-  const db = loadDb();
-  const user = db.users.find((u) => u.email.toLowerCase() === email && u.is_active);
-  if (!user) {
-    // Generic response to avoid account enumeration
-    res.json({ ok: true, message: 'Si cette adresse existe, un code OTP valable 5 minutes a été généré.' });
-    return;
-  }
-
-  const otpCode = String(crypto.randomInt(100000, 999999));
+  const otpCode = String(crypto.randomInt(100000, 1000000));
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
-  await mutateDb((d) => {
-    // Invalidate prior unused OTPs
-    d.password_reset_otps.forEach((o) => {
-      if (o.user_id === user.id && !o.used_at) o.used_at = new Date().toISOString();
-    });
-    d.password_reset_otps.push({
+  const user = await mutateAuthDb((db) => {
+    const user = db.users.find((u) => u.email.toLowerCase() === email && canAuthenticate(db, u));
+    if (!user) return null;
+    for (const otp of db.password_reset_otps) {
+      if (otp.user_id === user.id && !otp.used_at) otp.used_at = new Date().toISOString();
+    }
+    db.password_reset_otps.push({
       id: newId('otp'),
       user_id: user.id,
       email: user.email,
@@ -239,7 +252,13 @@ export async function requestPasswordOtp(req: Request, res: Response): Promise<v
       used_at: null,
       created_at: new Date().toISOString(),
     });
+    return user;
   });
+
+  if (!user) {
+    res.json({ ok: true, message: 'Si cette adresse existe, un code OTP valable 5 minutes a ?t? g?n?r?.' });
+    return;
+  }
 
   const smtpConfigured = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER);
   if (!smtpConfigured) {
@@ -269,13 +288,15 @@ export async function verifyAndResetPasswordWithOtp(req: Request, res: Response)
 
   let errorMsg: string | null = null;
   let statusCode = 200;
+  let resetUserId: string | undefined;
 
-  await mutateDb((db) => {
+  await mutateAuthDb((db) => {
     const otpRecord = [...db.password_reset_otps]
       .reverse()
       .find((o) => o.email.toLowerCase() === email && !o.used_at);
 
-    if (!otpRecord) {
+    const user = db.users.find((u) => u.id === otpRecord?.user_id && u.email.toLowerCase() === email);
+    if (!otpRecord || !user || !canAuthenticate(db, user)) {
       statusCode = 400;
       errorMsg = 'Aucun code OTP actif pour cet email.';
       return;
@@ -310,22 +331,26 @@ export async function verifyAndResetPasswordWithOtp(req: Request, res: Response)
       return;
     }
 
-    const user = db.users.find((u) => u.id === otpRecord.user_id);
-    if (user) {
-      user.password_hash = bcrypt.hashSync(newPassword, 10);
-      user.must_change_password = false;
-      user.updated_at = new Date().toISOString();
-      otpRecord.used_at = new Date().toISOString();
-      logAudit(db, {
-        company_id: user.company_id,
-        user_id: user.id,
-        user_name: user.full_name,
-        action: 'PASSWORD_RESET_OTP',
-        entity_type: 'user',
-        entity_id: user.id,
-        details: 'Réinitialisation mot de passe par OTP vérifié',
-      });
+    if (!isDemoModeEnabled() && demoPasswords.has(newPassword)) {
+      statusCode = 400;
+      errorMsg = 'Choisissez un autre mot de passe.';
+      return;
     }
+
+    user.password_hash = bcrypt.hashSync(newPassword, 10);
+    user.must_change_password = false;
+    user.updated_at = new Date().toISOString();
+    revokeUserSessions(db, user.id, user.updated_at);
+    resetUserId = user.id;
+    logAudit(db, {
+      company_id: user.company_id,
+      user_id: user.id,
+      user_name: user.full_name,
+      action: 'PASSWORD_RESET_OTP',
+      entity_type: 'user',
+      entity_id: user.id,
+      details: 'R?initialisation mot de passe par OTP v?rifi?',
+    });
   });
 
   if (errorMsg) {
@@ -333,6 +358,7 @@ export async function verifyAndResetPasswordWithOtp(req: Request, res: Response)
     return;
   }
 
+  if (resetUserId) getRealtimeIo()?.in(`user:${resetUserId}`).disconnectSockets(true);
   res.json({ ok: true, message: verifyOnly ? 'Code OTP vérifié.' : 'Mot de passe réinitialisé avec succès.' });
 }
 

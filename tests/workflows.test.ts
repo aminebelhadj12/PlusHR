@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { io as createSocketClient } from 'socket.io-client';
 import { createAppServer } from '../server.js';
 import { reloadDbFromSqlite, resetDemoDatabase, mutateDb } from '../server/repositories/dataStore.js';
+import { isolateTestDatabase } from './isolatedDatabase.js';
 import { getSqliteDb, getSqliteDbPath } from '../server/config/database.js';
 
 async function request(
@@ -41,7 +42,6 @@ function nextWeekday(offsetDays = 10): string {
 
 async function runTests() {
   console.log('=== +HR Complete Functional Test Suite ===');
-  process.env.ENABLE_DEMO_ACCOUNTS = 'true';
   resetDemoDatabase();
 
   const { httpServer } = await createAppServer({ skipVite: true });
@@ -115,7 +115,7 @@ async function runTests() {
     });
     assert.equal(loginEmp.status, 200);
     assert.equal(loginEmp.data.user.role_code, 'EMPLOYEE');
-    const empToken = loginEmp.data.accessToken;
+    let empToken = loginEmp.data.accessToken;
     const empUserId = loginEmp.data.user.id;
     const empEmployeeId = loginEmp.data.user.employee_id;
 
@@ -161,6 +161,13 @@ async function runTests() {
       body: { email: 'employe@atlas-industrial.ma', code: otpReq.data.devOtpPreview, newPassword: 'Atlas#Emp2026!' },
     });
     assert.equal(otpReset.status, 200);
+    assert.equal((await request(baseUrl, '/api/auth/me', { token: empToken })).status, 401);
+    const employeeReLogin = await request(baseUrl, '/api/auth/login', {
+      method: 'POST',
+      body: { identifier: 'ATL-010', password: 'Atlas#Emp2026!' },
+    });
+    assert.equal(employeeReLogin.status, 200);
+    empToken = employeeReLogin.data.accessToken;
     console.log('✓ 2. Authentication (5 roles, 401, refresh, profile, WebAuthn, OTP reset) verified');
 
     // 3. RBAC enforcement
@@ -699,16 +706,15 @@ async function runTests() {
 
     console.log('\nALL 19 COMPLETE FUNCTIONAL TEST SUITES PASSED SUCCESSFULLY.');
   } finally {
-    resetDemoDatabase();
     httpServer.closeAllConnections?.();
     await new Promise<void>((resolve) => httpServer.close(() => resolve()));
   }
 }
 
+const cleanup = isolateTestDatabase();
 runTests()
-  .then(() => process.exit(0))
   .catch((err) => {
     console.error('TEST SUITE FAILED:', err);
-    resetDemoDatabase();
-    process.exit(1);
-  });
+    process.exitCode = 1;
+  })
+  .finally(cleanup);

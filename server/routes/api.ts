@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import { requireAuth, requireRole } from '../middlewares/auth.js';
 import { uploadMiddleware } from '../validators/validators.js';
@@ -40,16 +40,25 @@ apiRouter.get('/health', (_req, res) => {
   });
 });
 
+function authHandler(handler: (req: Request, res: Response) => Promise<void>) {
+  return (req: Request, res: Response): void => {
+    void handler(req, res).catch((error: unknown) => {
+      console.error('[+HR Auth]', error);
+      if (!res.headersSent) res.status(500).json({ error: 'Erreur serveur inattendue.' });
+    });
+  };
+}
+
 // Auth & Security
-apiRouter.post('/auth/login', authLimiter, authCtrl.login);
-apiRouter.post('/auth/logout', authCtrl.logout);
-apiRouter.post('/auth/refresh', authCtrl.refreshSession);
+apiRouter.post('/auth/login', authLimiter, authHandler(authCtrl.login));
+apiRouter.post('/auth/logout', authHandler(authCtrl.logout));
+apiRouter.post('/auth/refresh', authHandler(authCtrl.refreshSession));
 apiRouter.get('/auth/demo-accounts', authCtrl.getDemoAccounts);
-apiRouter.post('/auth/otp/request', authLimiter, authCtrl.requestPasswordOtp);
-apiRouter.post('/auth/otp/verify-reset', authLimiter, authCtrl.verifyAndResetPasswordWithOtp);
+apiRouter.post('/auth/otp/request', authLimiter, authHandler(authCtrl.requestPasswordOtp));
+apiRouter.post('/auth/otp/verify-reset', authLimiter, authHandler(authCtrl.verifyAndResetPasswordWithOtp));
 
 apiRouter.get('/auth/me', requireAuth, authCtrl.getMe);
-apiRouter.post('/auth/change-password', requireAuth, authCtrl.changePassword);
+apiRouter.post('/auth/change-password', requireAuth, authHandler(authCtrl.changePassword));
 apiRouter.put('/auth/profile', requireAuth, authCtrl.updateMyProfile);
 apiRouter.post('/auth/webauthn/register', requireAuth, authCtrl.registerWebAuthnCredential);
 

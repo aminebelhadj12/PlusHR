@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import { getSqliteDb } from '../config/database.js';
+import type { DbSchema, DbUser } from '../repositories/dataStore.js';
 import type { RoleCode } from '../../src/types/index.js';
 
 const IN_MEMORY_JWT_SECRET = crypto.randomBytes(32).toString('hex');
@@ -19,6 +21,10 @@ export interface JwtPayload {
   companyId: string | null;
   roleCode: RoleCode;
   email: string;
+  credentialStamp: string;
+  firstLogin: boolean;
+  rememberMe: boolean;
+  exp?: number;
 }
 
 export interface AuthenticatedRequest extends Request {
@@ -27,18 +33,64 @@ export interface AuthenticatedRequest extends Request {
 
 export function signAccessToken(payload: JwtPayload, rememberMe = false): string {
   return jwt.sign(payload, getJwtSecret(), {
+    audience: 'plushr-access',
     expiresIn: rememberMe ? '7d' : '12h',
   });
 }
 
 export function signRefreshToken(payload: JwtPayload): string {
   return jwt.sign(payload, getRefreshSecret(), {
+    audience: 'plushr-refresh',
     expiresIn: '14d',
+    jwtid: crypto.randomUUID(),
   });
 }
 
 export function verifyAccessToken(token: string): JwtPayload {
-  return jwt.verify(token, getJwtSecret()) as JwtPayload;
+  const decoded = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'], audience: 'plushr-access' }) as JwtPayload;
+  const user = getSqliteDb().prepare(`
+    SELECT id, company_id, role_code, password_hash
+    FROM users
+    WHERE id = ? AND is_active = 1 AND (
+      company_id IS NULL OR EXISTS (
+        SELECT 1 FROM companies WHERE companies.id = users.company_id AND status <> 'suspended'
+      )
+    )
+  `).get(decoded.userId) as SessionIdentity | undefined;
+  if (!user || !matchesSession(decoded, user)) {
+    throw new Error('Invalid session');
+  }
+  return decoded;
+}
+
+export function canAuthenticate(db: DbSchema, user: DbUser): boolean {
+  return user.is_active && (!user.company_id || db.companies.some(
+    (company) => company.id === user.company_id && company.status !== 'suspended'
+  ));
+}
+
+export function createSessionPayload(user: DbUser, rememberMe: boolean): JwtPayload {
+  return {
+    userId: user.id,
+    companyId: user.company_id,
+    roleCode: user.role_code,
+    email: user.email,
+    credentialStamp: credentialStamp(user),
+    firstLogin: user.must_change_password,
+    rememberMe,
+  };
+}
+
+type SessionIdentity = Pick<DbUser, 'id' | 'company_id' | 'role_code' | 'password_hash'>;
+
+function credentialStamp(user: SessionIdentity): string {
+  return crypto.createHmac('sha256', getJwtSecret())
+    .update(JSON.stringify([user.id, user.password_hash])).digest('hex');
+}
+
+export function matchesSession(payload: JwtPayload, user: SessionIdentity): boolean {
+  return payload.companyId === user.company_id && payload.roleCode === user.role_code &&
+    payload.credentialStamp === credentialStamp(user);
 }
 
 export function setAuthCookies(res: Response, accessToken: string, refreshToken: string, rememberMe = false): void {

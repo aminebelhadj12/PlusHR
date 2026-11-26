@@ -5,7 +5,7 @@ import { useApp } from '../contexts/AppContext';
 import type { AuthUser } from '../types';
 
 export const ProfilePage: React.FC = () => {
-  const { user, updateUser, addToast } = useApp();
+  const { user, updateUser, setSession, addToast } = useApp();
 
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -42,10 +42,11 @@ export const ProfilePage: React.FC = () => {
     e.preventDefault();
     setSavingPwd(true);
     try {
-      await apiRequest('/api/auth/change-password', {
+      const res = await apiRequest<{ user: AuthUser; accessToken: string }>('/api/auth/change-password', {
         method: 'POST',
         body: JSON.stringify({ currentPassword, newPassword }),
       });
+      setSession(res.user, res.accessToken);
       setCurrentPassword('');
       setNewPassword('');
       addToast('Mot de passe modifié avec succès', 'success');

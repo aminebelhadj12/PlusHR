@@ -1,5 +1,7 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { getSqliteDb } from '../config/database.js';
+import { isDemoModeEnabled } from '../config/demoAccounts.js';
 import { isSqliteSeeded, readAllFromSqlite, syncChangesToSqlite, writeSeedToSqlite } from './sqliteSync.js';
 import type {
   RoleCode,
@@ -1376,7 +1378,7 @@ function createInitialSeed(): DbSchema {
 
 export function loadDb(): DbSchema {
   if (memoryDb) return memoryDb;
-  if (isSqliteSeeded()) {
+  if (!isDemoModeEnabled() || isSqliteSeeded()) {
     memoryDb = readAllFromSqlite();
     return memoryDb;
   }
@@ -1398,6 +1400,29 @@ export async function mutateDb<T>(fn: (db: DbSchema) => T | Promise<T>): Promise
     syncChangesToSqlite(db);
     return result;
   };
+  return queueWrite(run);
+}
+
+export function mutateAuthDb<T>(fn: (db: DbSchema) => T): Promise<T> {
+  return queueWrite(() => {
+    const sqlite = getSqliteDb();
+    try {
+      const result = sqlite.transaction(() => {
+        const db = readAllFromSqlite(sqlite);
+        const value = fn(db);
+        syncChangesToSqlite(db, sqlite);
+        return { db, value };
+      }).immediate();
+      memoryDb = result.db;
+      return result.value;
+    } catch (error) {
+      memoryDb = null;
+      throw error;
+    }
+  });
+}
+
+function queueWrite<T>(run: () => T | Promise<T>): Promise<T> {
   const next = writeQueue.then(run, run);
   writeQueue = next.then(() => undefined, () => undefined);
   return next;
@@ -1438,6 +1463,9 @@ export function logAudit(
 }
 
 export function resetDemoDatabase(): void {
+  if (process.env.NODE_ENV !== 'test' || !process.env.SQLITE_DB_PATH || !isDemoModeEnabled()) {
+    throw new Error('Demo reset requires test mode and an explicit SQLite path.');
+  }
   const seed = createInitialSeed();
   writeSeedToSqlite(seed);
   memoryDb = readAllFromSqlite();
