@@ -6,6 +6,7 @@ import type { Response } from 'express';
 import { closeSqliteDb, getDbMode, getSqliteDb, getSqliteDbPath } from '../config/database.js';
 import { logAudit, mutateAuthDb, reloadDbFromSqlite, waitForDbWrites, type DbSchema } from '../repositories/dataStore.js';
 import { drainApiRequests, isInMaintenance, setMaintenance } from './maintenance.js';
+import { preserveRecoveryMarker } from './superAdminRecovery.js';
 import { getRealtimeIo } from './realtimeService.js';
 
 export interface BackupInfo {
@@ -216,7 +217,7 @@ export function startBackupScheduler(): () => void {
 function schemaSignature(db: Database.Database): unknown[] {
   return db.prepare(`
     SELECT type, name, tbl_name, sql FROM sqlite_schema
-    WHERE name NOT GLOB 'sqlite_*' AND name <> 'auth_session_generation'
+    WHERE name NOT GLOB 'sqlite_*' AND name NOT IN ('auth_session_generation', 'super_admin_recovery')
     ORDER BY type, name
   `).all();
 }
@@ -237,6 +238,7 @@ function prepareRestore(stage: Database.Database, live: Database.Database, id: s
   }
 
   stage.transaction(() => {
+    preserveRecoveryMarker(stage, live);
     const suspend = stage.prepare("UPDATE companies SET status = 'suspended' WHERE id = ?");
     for (const companyId of suspendedCompanies) suspend.run(companyId);
     const disable = stage.prepare('UPDATE users SET is_active = 0, webauthn_credential_id = NULL WHERE id = ?');

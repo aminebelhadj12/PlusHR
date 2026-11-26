@@ -9,6 +9,7 @@ export function isolateTestDatabase(): () => void {
   process.env.DB_MODE = 'sqlite';
   process.env.SQLITE_DB_PATH = path.join(directory, 'test.sqlite');
   process.env.ENABLE_DEMO_ACCOUNTS = 'true';
+  process.env.SUPER_ADMIN_RECOVERY_ENABLED = 'false';
   return () => {
     closeSqliteDb();
     fs.rmSync(directory, { recursive: true, force: true });

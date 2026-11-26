@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import { createServer as createViteServer } from 'vite';
 import { initDatabaseConnection } from './server/config/database.js';
 import { loadDb } from './server/repositories/dataStore.js';
+import { checkRecoveryConfiguration, recoverSuperAdmin } from './server/services/superAdminRecovery.js';
 import { migrateAuthSecurity } from './server/services/authSecurity.js';
 import { trackApiRequests } from './server/services/maintenance.js';
 import { startBackupScheduler } from './server/services/sqliteBackup.js';
@@ -13,7 +14,14 @@ import { initRealtimeServer } from './server/services/realtimeService.js';
 import { apiRouter } from './server/routes/api.js';
 
 export async function createAppServer(options: { skipVite?: boolean; scheduleBackups?: boolean } = {}) {
+  const recoveryEnabled = checkRecoveryConfiguration();
   await initDatabaseConnection();
+  if (recoveryEnabled) {
+    const result = recoverSuperAdmin();
+    console.info(result === 'recovered'
+      ? '[+HR Recovery] Super Admin recovery completed.'
+      : '[+HR Recovery] Super Admin recovery already completed for this database.');
+  }
   loadDb();
   await migrateAuthSecurity();
 

@@ -640,3 +640,9 @@ CREATE TABLE IF NOT EXISTS auth_session_generation (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   generation TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS super_admin_recovery (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  user_id TEXT NOT NULL,
+  recovered_at TEXT NOT NULL
+);
