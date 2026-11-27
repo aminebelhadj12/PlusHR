@@ -50,3 +50,164 @@
     display: none !important;
   }
 }
+
+
+/* Use shared spacing tokens to keep desktop workspace controls compact. */
+.app-shell {
+  --app-header-height: clamp(3.25rem, 7.2dvh, 3.75rem);
+  --app-sidebar-width: clamp(12rem, 15.8vw, 14rem);
+}
+
+.app-header-height {
+  height: var(--app-header-height);
+}
+
+.app-content {
+  width: 100%;
+  max-width: 112rem;
+  padding: clamp(0.625rem, 1.35vw, 1.5rem);
+  overflow-wrap: anywhere;
+}
+
+.app-content :where(.grid) > *,
+.app-content :where(input, select, textarea),
+.dialog-body :where(input, select, textarea) {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+.app-notification-menu {
+  position: fixed;
+  inset-inline: 0.625rem;
+  inset-block-start: calc(var(--app-header-height) + 0.375rem);
+}
+
+.responsive-scroll {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.responsive-scroll:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+}
+
+.dialog-overlay {
+  --dialog-gutter: clamp(0.5rem, 2vw, 1rem);
+  padding: var(--dialog-gutter);
+}
+
+.dialog-panel {
+  max-height: calc(100dvh - 2 * var(--dialog-gutter));
+}
+
+.login-screen {
+  padding: clamp(0.625rem, 2.6dvh, 2.5rem) clamp(0.75rem, 2.5vw, 2rem);
+}
+
+.login-frame {
+  max-width: 42.5rem;
+}
+
+.login-form-panel {
+  padding: clamp(1.25rem, 4dvh, 2.75rem) clamp(1rem, 4vw, 3rem);
+}
+
+.dashboard-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, clamp(8rem, 11vw, 9.25rem)), 1fr));
+}
+
+.dashboard-panels {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, max(21rem, calc((100% - 1rem) / 2))), 1fr));
+}
+
+.chart-viewport {
+  position: relative;
+  height: clamp(12rem, 30dvh, 17.5rem);
+  min-width: 0;
+  overflow: clip;
+}
+
+.chart-viewport :where(.recharts-responsive-container, .recharts-wrapper, svg.recharts-surface) {
+  max-width: 100%;
+}
+
+.chart-viewport .recharts-legend-wrapper {
+  inset-inline: 0 !important;
+  width: 100% !important;
+}
+
+.chart-viewport .recharts-default-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.conversation-layout {
+  min-width: 0;
+}
+
+.conversation-content {
+  min-height: 24rem;
+  max-height: max(24rem, 72dvh);
+}
+
+.conversation-sidebar {
+  max-height: 17rem;
+}
+
+@media (min-width: 40rem) {
+  .app-notification-menu {
+    position: absolute;
+    inset-inline: auto 0;
+    inset-block-start: calc(100% + 0.375rem);
+    width: 23rem;
+  }
+}
+
+@media (max-width: 29.99rem) {
+  .dialog-body :where(.grid-cols-2, .grid-cols-3) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-content :where(input:not([type=checkbox], [type=radio]), select, textarea),
+  .dialog-body :where(input:not([type=checkbox], [type=radio]), select, textarea) {
+    font-size: max(1rem, 16px);
+  }
+}
+
+@media (min-width: 64rem) {
+  .app-shell {
+    --spacing: clamp(0.203125rem, 0.128125rem + 0.1vw, 0.25rem);
+    --text-sm: clamp(0.8125rem, 0.72rem + 0.1vw, 0.875rem);
+    --text-2xl: clamp(1.25rem, 1.62vw, 1.5rem);
+    --text-3xl: clamp(1.5rem, 2vw, 1.875rem);
+  }
+
+  .login-screen {
+    --spacing: clamp(0.2rem, 0.46dvh, 0.25rem);
+    --text-sm: clamp(0.8rem, 0.65rem + 0.18vw, 0.875rem);
+  }
+
+  .login-frame {
+    max-width: clamp(57rem, 133dvh, 72.5rem);
+  }
+
+  .login-form-panel {
+    padding-block: clamp(1.25rem, 3dvh, 2.75rem);
+    padding-inline: clamp(1.5rem, 3vw, 3rem);
+  }
+
+  .conversation-layout {
+    grid-template-columns: minmax(12rem, 1fr) minmax(0, 3fr);
+    height: clamp(25rem, calc(100dvh - var(--app-header-height) - 8rem), 54rem);
+  }
+
+  .conversation-content,
+  .conversation-sidebar {
+    min-height: 0;
+    max-height: none;
+  }
+}

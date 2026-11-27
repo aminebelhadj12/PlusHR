@@ -333,7 +333,7 @@ const InfoField: React.FC<{ label: string; value: string; mono?: boolean }> = ({
 const SimpleListTable: React.FC<{ headers: string[]; rows: Array<Array<React.ReactNode>> }> = ({ headers, rows }) => {
   if (rows.length === 0) return <p className="text-sm text-slate-500">Aucun enregistrement trouvé.</p>;
   return (
-    <div className="overflow-x-auto">
+    <div className="responsive-scroll" role="region" aria-label="Données du dossier employé" tabIndex={0}>
       <table className="w-full text-sm text-start border-collapse">
         <thead>
           <tr className="border-b border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-500">

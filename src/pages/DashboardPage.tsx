@@ -6,9 +6,6 @@ import {
   Area,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
   LineChart,
   Line,
   XAxis,
@@ -35,13 +32,13 @@ import {
 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { apiRequest } from '../services/api';
+import { DashboardOverview } from '../components/DashboardOverview';
+import { dashboardCopy } from '../utils/dashboardCopy';
 import { StatusText } from '../components/ui/StatusText';
 import { formatMad } from '../utils/i18n';
 
-const CHART_COLORS = ['#2563EB', '#16A34A', '#F59E0B', '#0F172A', '#64748B', '#DC2626'];
-
 export const DashboardPage: React.FC = () => {
-  const { user, addToast } = useApp();
+  const { user, lang, addToast } = useApp();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [nowClock, setNowClock] = useState(new Date());
@@ -83,14 +80,14 @@ export const DashboardPage: React.FC = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="dashboard-metrics grid gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="h-24 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 animate-pulse" />
           ))}
         </div>
-        <div className="grid lg:grid-cols-2 gap-6">
-          <div className="h-72 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 animate-pulse" />
-          <div className="h-72 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 animate-pulse" />
+        <div className="dashboard-panels grid gap-4">
+          <div className="chart-viewport rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 animate-pulse" />
+          <div className="chart-viewport rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 animate-pulse" />
         </div>
       </div>
     );
@@ -116,7 +113,7 @@ export const DashboardPage: React.FC = () => {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="dashboard-metrics grid gap-4">
           <KpiCard icon={Building2} label="Entreprises actives" value={`${stats.activeCompanies} / ${stats.totalCompanies}`} />
           <KpiCard icon={Users} label="Employés plateforme" value={stats.totalEmployees} />
           <KpiCard icon={Wallet} label="Revenus abonnements" value={formatMad(stats.monthlyRevenueMad)} />
@@ -237,7 +234,7 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Employee KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="dashboard-metrics grid gap-4">
           <KpiCard icon={Clock} label="Heures ce mois" value={`${kpis.workedHoursMonth}h`} />
           <KpiCard icon={UserX} label="Absences" value={kpis.absencesCount} />
           <KpiCard icon={Clock} label="Retards" value={kpis.latesCount} />
@@ -340,58 +337,34 @@ export const DashboardPage: React.FC = () => {
   const { kpis, charts, recentActivities, upcomingMeetings, pinnedAnnouncements, pendingQueue } = data;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="plus-dashboard-page">
+      <div className="plus-dashboard-intro">
         <div>
-          <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
-            Tableau de bord {user?.role_code === 'MANAGER' ? 'Équipe' : 'RH & Direction'}
+          <h1>
+            {dashboardCopy[lang].greeting}{user?.full_name ? `, ${user.full_name.trim().split(/\s+/)[0]}` : ''}
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Indicateurs calculés en temps réel depuis la base de données · {user?.company_name}
-          </p>
+          <p>{dashboardCopy[lang].workspaceSubtitle} · {user?.company_name}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link to="/reports" className="px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 whitespace-nowrap">
-            Rapports & Exports
+        <div className="plus-dashboard-actions">
+          <Link to="/reports">
+            {dashboardCopy[lang].reportsAction}
           </Link>
-          <Link to="/ai-assistant" className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium whitespace-nowrap">
-            +HR AI Assistant
+          <Link to="/ai-assistant">
+            {dashboardCopy[lang].openAi}
           </Link>
         </div>
       </div>
+      <DashboardOverview indicators={kpis} contracts={charts.contractDistribution} lang={lang}
+        companyId={user?.company_id} departmentId={user?.role_code === 'MANAGER' ? user.department_id : undefined} />
 
-      {/* 11 KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-        <KpiCard icon={Users} label="Total employés" value={kpis.totalEmployees} />
-        <KpiCard icon={UserCheck} label="Employés actifs" value={kpis.activeEmployees} />
-        <KpiCard icon={CheckCircle2} label="Présents aujourd’hui" value={kpis.presentToday} tone="success" />
-        <KpiCard icon={UserX} label="Absents aujourd’hui" value={kpis.absentToday} tone={kpis.absentToday > 0 ? 'danger' : 'neutral'} />
-        <KpiCard icon={Clock} label="En retard" value={kpis.lateToday} tone={kpis.lateToday > 0 ? 'warning' : 'neutral'} />
-        <KpiCard icon={CalendarOff} label="En congé" value={kpis.onLeaveToday} />
-        <KpiCard icon={UserCheck} label="Taux de présence" value={`${kpis.attendanceRate}%`} tone="success" />
-        <KpiCard icon={ClipboardList} label="Demandes en attente" value={kpis.pendingRequests} tone={kpis.pendingRequests > 0 ? 'warning' : 'neutral'} />
-        <KpiCard icon={Users} label="Nouveaux (30j)" value={kpis.newEmployees} />
-        <KpiCard icon={FileWarning} label="Contrats à échéance" value={kpis.expiringContracts} tone={kpis.expiringContracts > 0 ? 'warning' : 'neutral'} />
-        {kpis.monthlyPayrollMass !== null && (
-          <div className="col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-              <span>Masse salariale mensuelle</span>
-              <Wallet className="w-4 h-4 text-blue-600" />
-            </div>
-            <div className="mt-2 font-mono text-xl font-bold text-slate-900 dark:text-white tabular-nums">
-              {formatMad(kpis.monthlyPayrollMass)}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 7 Interactive Charts Grid */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      {/* Detailed analytics */}
+      <h2 className="font-display text-lg font-semibold">{dashboardCopy[lang].details}</h2>
+      <div className="dashboard-panels grid gap-4">
         {/* 1 & 2: Attendance & Absence Evolution */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
           <h2 className="font-display text-base font-semibold mb-4">Évolution des présences, retards et absences</h2>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="chart-viewport">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <AreaChart data={charts.attendanceSeries}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis dataKey="date" tick={{ fontSize: 12 }} />
@@ -409,8 +382,8 @@ export const DashboardPage: React.FC = () => {
         {/* 3: Department Distribution */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
           <h2 className="font-display text-base font-semibold mb-4">Répartition des employés par département</h2>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="chart-viewport">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={charts.departmentBreakdown}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis dataKey="code" tick={{ fontSize: 12 }} />
@@ -422,11 +395,11 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 4 & 5: Recruitment & Contract Types */}
+        {/* Recruitment Trends */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
           <h2 className="font-display text-base font-semibold mb-4">Évolution des recrutements</h2>
-          <div className="h-60">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="chart-viewport">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <LineChart data={charts.recruitmentSeries}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis dataKey="year" tick={{ fontSize: 12 }} />
@@ -438,28 +411,11 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
-          <h2 className="font-display text-base font-semibold mb-4">Répartition des types de contrats (CDI, CDD, Stage…)</h2>
-          <div className="h-60">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={charts.contractDistribution} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={3}>
-                  {charts.contractDistribution.map((_: unknown, idx: number) => (
-                    <Cell key={idx} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
         {/* 6: Leave Statistics */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
           <h2 className="font-display text-base font-semibold mb-4">Statistiques des congés</h2>
-          <div className="h-60">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="chart-viewport">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={charts.leaveStats} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
@@ -474,8 +430,8 @@ export const DashboardPage: React.FC = () => {
         {/* 7: Worked Hours Evolution */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
           <h2 className="font-display text-base font-semibold mb-4">Évolution des heures travaillées (h/jour)</h2>
-          <div className="h-60">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="chart-viewport">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={charts.attendanceSeries}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis dataKey="date" tick={{ fontSize: 12 }} />
@@ -576,7 +532,7 @@ const KpiCard: React.FC<{
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col justify-between">
       <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
-        <span className="truncate">{label}</span>
+        <span className="min-w-0 break-words" title={label}>{label}</span>
         <Icon className="w-4 h-4 shrink-0 text-slate-400" />
       </div>
       <div className={`mt-2 font-mono text-2xl font-bold tabular-nums ${toneClass}`}>{value}</div>

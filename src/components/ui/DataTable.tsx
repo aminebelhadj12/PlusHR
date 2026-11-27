@@ -72,11 +72,11 @@ export function DataTable<T extends { id?: string }>({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+    <div className="min-w-0 max-w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
       {(searchFilter || toolbarExtras) && (
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+        <div className="p-3 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
           {searchFilter ? (
-            <div className="relative flex-1 min-w-[220px] max-w-sm">
+            <div className="relative w-full min-w-0 flex-[1_1_12rem] max-w-sm">
               <Search className="w-4 h-4 text-slate-400 absolute start-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
@@ -111,7 +111,7 @@ export function DataTable<T extends { id?: string }>({
           {emptyAction}
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="responsive-scroll" role="region" aria-label="Tableau de données" tabIndex={0}>
           <table className="w-full text-sm text-start border-collapse">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 text-xs font-semibold text-slate-500 dark:text-slate-400">
@@ -119,7 +119,7 @@ export function DataTable<T extends { id?: string }>({
                   <th
                     key={col.key}
                     onClick={() => toggleSort(col)}
-                    className={`px-4 py-3 whitespace-nowrap ${
+                    className={`px-3 py-2.5 whitespace-nowrap ${
                       col.align === 'right' ? 'text-end' : 'text-start'
                     } ${col.sortValue ? 'cursor-pointer hover:text-slate-900 dark:hover:text-slate-200 select-none' : ''}`}
                   >
@@ -141,7 +141,7 @@ export function DataTable<T extends { id?: string }>({
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                      className={`px-4 py-3 text-slate-700 dark:text-slate-200 ${
+                      className={`px-3 py-2.5 text-slate-700 dark:text-slate-200 ${
                         col.align === 'right' ? 'text-end tabular-nums' : 'text-start'
                       }`}
                     >
@@ -156,7 +156,7 @@ export function DataTable<T extends { id?: string }>({
       )}
 
       {!loading && filtered.length > pageSize && (
-        <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+        <div className="px-3 py-2.5 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
           <span className="tabular-nums">
             {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, filtered.length)} sur {filtered.length}
           </span>

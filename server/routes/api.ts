@@ -5,6 +5,7 @@ import { uploadMiddleware } from '../validators/validators.js';
 import * as authCtrl from '../controllers/authController.js';
 import * as coreCtrl from '../controllers/coreHrController.js';
 import * as opsCtrl from '../controllers/operationsController.js';
+import * as aiCtrl from '../controllers/aiAssistantController.js';
 import * as admCtrl from '../controllers/adminCommAiController.js';
 import { trackApiHandler } from '../services/maintenance.js';
 import { backupsRouter } from './backups.js';
@@ -172,8 +173,11 @@ apiRouter.post('/notifications/:id/read', requireAuth, trackApiHandler(admCtrl.m
 apiRouter.put('/notifications/preferences', requireAuth, trackApiHandler(admCtrl.saveNotificationPreferences));
 
 // Gemini AI Assistant, Analytics & Schedule Suggestion
-apiRouter.post('/ai/chat', requireAuth, trackApiHandler(admCtrl.aiAssistantChat));
-apiRouter.get('/ai/conversations', requireAuth, admCtrl.listAiConversations);
+apiRouter.post('/ai/chat', requireAuth, trackApiHandler(aiCtrl.aiAssistantChat));
+apiRouter.get('/ai/conversations', requireAuth, aiCtrl.listAiConversations);
+apiRouter.get('/ai/conversations/:id', requireAuth, aiCtrl.getAiConversation);
+apiRouter.patch('/ai/conversations/:id', requireAuth, trackApiHandler(aiCtrl.renameAiConversation));
+apiRouter.delete('/ai/conversations/:id', requireAuth, trackApiHandler(aiCtrl.deleteAiConversation));
 apiRouter.get('/ai/analytics', requireAuth, requireRole('COMPANY_ADMIN', 'HR_MANAGER', 'MANAGER'), admCtrl.getAiAnalytics);
 apiRouter.get('/ai/schedule-suggestions', requireAuth, requireRole('COMPANY_ADMIN', 'HR_MANAGER', 'MANAGER'), admCtrl.listAiScheduleSuggestions);
 apiRouter.post('/ai/schedule-suggest', requireAuth, requireRole('COMPANY_ADMIN', 'HR_MANAGER', 'MANAGER'), trackApiHandler(admCtrl.suggestScheduleAi));

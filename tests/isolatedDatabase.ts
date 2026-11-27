@@ -6,6 +6,7 @@ import { closeSqliteDb } from '../server/config/database.js';
 export function isolateTestDatabase(): () => void {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'plushr-test-'));
   process.env.NODE_ENV = 'test';
+  delete process.env.GEMINI_API_KEY;
   process.env.DB_MODE = 'sqlite';
   process.env.SQLITE_DB_PATH = path.join(directory, 'test.sqlite');
   process.env.ENABLE_DEMO_ACCOUNTS = 'true';

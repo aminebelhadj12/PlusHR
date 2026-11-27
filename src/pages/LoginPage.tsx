@@ -230,15 +230,15 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <main className="grid min-h-svh place-items-center bg-[#f4f7fc] px-4 py-6 sm:px-8 sm:py-10 dark:bg-[#0b1120]">
-      <div className="w-full max-w-[680px] lg:max-w-[1160px]">
+    <main className="login-screen grid min-h-dvh place-items-center bg-[#f4f7fc] dark:bg-[#0b1120]">
+      <div className="login-frame w-full">
         <div className="grid overflow-hidden rounded-[30px] border border-white bg-white p-2 shadow-[0_24px_70px_-32px_rgba(30,58,138,0.28)] sm:p-3 lg:grid-cols-[42%_58%] dark:border-slate-800 dark:bg-slate-900">
-          <section aria-labelledby="login-heading" className="flex min-w-0 flex-col justify-center px-5 py-8 sm:px-12 sm:py-10 lg:px-9 lg:py-11 xl:px-12">
-            <div className="mb-8">
+          <section aria-labelledby="login-heading" className="flex min-w-0 flex-col justify-center login-form-panel">
+            <div className="mb-5 sm:mb-6">
               <BrandLogo />
             </div>
 
-            <h1 id="login-heading" className="font-display text-[clamp(1.65rem,3vw,2.25rem)] font-bold leading-tight tracking-tight text-slate-950 dark:text-white">
+            <h1 id="login-heading" className="font-display text-[clamp(1.65rem,min(3vw,4.4dvh),2.25rem)] font-bold leading-tight tracking-tight text-slate-950 dark:text-white">
               {copy.title}
             </h1>
             <p className="mt-2.5 max-w-sm text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -251,7 +251,7 @@ export const LoginPage: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleLogin} className="mt-7 space-y-4">
+            <form onSubmit={handleLogin} className="mt-5 space-y-3.5 sm:mt-6">
               <div>
                 <label htmlFor="login-identifier" className={labelClass}>{copy.identifier}</label>
                 <div className="relative">
@@ -322,7 +322,7 @@ export const LoginPage: React.FC = () => {
               </button>
             </form>
 
-            <div className="my-5 flex items-center gap-3 text-xs font-medium text-slate-500 dark:text-slate-400">
+            <div className="my-4 flex items-center gap-3 text-xs font-medium text-slate-500 dark:text-slate-400">
               <span aria-hidden="true" className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
               <span>{copy.or}</span>
               <span aria-hidden="true" className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
@@ -365,7 +365,7 @@ export const LoginPage: React.FC = () => {
             />
             <div className="flex w-full max-w-[555px] flex-1 flex-col items-center justify-center px-5 pb-8 pt-4 sm:px-8 sm:pb-10 sm:pt-5 lg:pb-12">
               <p className="text-xs font-semibold tracking-wide text-blue-800 dark:text-blue-200">{copy.label}</p>
-              <h2 id="login-illustration-heading" className="mt-3 text-balance font-display text-[clamp(1.4rem,2.8vw,2.35rem)] font-bold leading-[1.16] tracking-tight text-[#12254d] dark:text-white">
+              <h2 id="login-illustration-heading" className="mt-3 text-balance font-display text-[clamp(1.4rem,min(2.8vw,4dvh),2.35rem)] font-bold leading-[1.16] tracking-tight text-[#12254d] dark:text-white">
                 {copy.heading}
               </h2>
               <p className="mx-auto mt-3 max-w-[440px] text-pretty text-sm leading-6 text-[#415674] dark:text-blue-100">

@@ -134,7 +134,7 @@ export const AiSchedulePage: React.FC = () => {
         onSubmit={handleGenerate}
         className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-wrap items-end gap-4"
       >
-        <div className="min-w-[220px]">
+        <div className="min-w-0 w-full sm:w-auto sm:min-w-[13rem]">
           <label className="block text-xs font-medium text-slate-500 mb-1">Département</label>
           <select
             value={departmentId}
@@ -244,7 +244,7 @@ export const AiSchedulePage: React.FC = () => {
                 )}
               </div>
 
-              <div className="overflow-x-auto">
+              <div className="responsive-scroll" role="region" aria-label="Planning proposé" tabIndex={0}>
                 <table className="w-full text-sm text-start">
                   <thead className="bg-slate-50 dark:bg-slate-800/50 text-xs text-slate-500">
                     <tr>

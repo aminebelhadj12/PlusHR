@@ -147,7 +147,7 @@ export const SchedulesPage: React.FC = () => {
       )}
 
       {/* Calendar Matrix */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-x-auto">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl responsive-scroll" role="region" aria-label="Planning hebdomadaire" tabIndex={0}>
         <table className="w-full text-xs text-start border-collapse min-w-[720px]">
           <thead>
             <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">

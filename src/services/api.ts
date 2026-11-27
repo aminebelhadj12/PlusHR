@@ -82,3 +82,28 @@ export async function apiDownload(url: string, options: RequestInit): Promise<Bl
   if (!response.ok) await readPayload(response);
   return response.blob();
 }
+
+export async function apiStream<T>(url: string, options: RequestInit, onEvent: (event: T) => void): Promise<void> {
+  const headers = new Headers(options.headers);
+  headers.set('Accept', 'application/x-ndjson');
+  const response = await authenticatedFetch(url, { ...options, headers });
+  if (!response.ok) await readPayload(response);
+  if (!response.body || !response.headers.get('content-type')?.includes('application/x-ndjson')) {
+    throw new ApiError('Unexpected response format.', response.status);
+  }
+  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+  let buffer = '';
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      const lines = (buffer + value).split('\n');
+      buffer = lines.pop() ?? '';
+      for (const line of lines) if (line.trim()) onEvent(JSON.parse(line) as T);
+    }
+    if (buffer.trim()) onEvent(JSON.parse(buffer) as T);
+  } finally {
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}

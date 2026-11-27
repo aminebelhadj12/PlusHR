@@ -147,7 +147,7 @@ export const TasksPage: React.FC = () => {
       render: (r) => {
         const pct = Math.min(130, Math.round((r.current_load_hours / r.capacity_hours) * 100));
         return (
-          <div className="min-w-[160px]">
+          <div className="min-w-0 w-full sm:w-auto sm:min-w-[10rem]">
             <div className="flex items-center justify-between text-xs mb-1 tabular-nums">
               <span className="font-medium text-slate-800 dark:text-slate-200">
                 {r.current_load_hours}h / {r.capacity_hours}h

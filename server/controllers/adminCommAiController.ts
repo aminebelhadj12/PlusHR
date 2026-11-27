@@ -3,7 +3,7 @@ import { loadDb, mutateDb, newId, logAudit } from '../repositories/dataStore.js'
 import { AuthenticatedRequest, assertSameCompany, getScopedCompanyId } from '../middlewares/auth.js';
 import { isValidDateStr, isValidTimeStr, sanitizeText } from '../validators/validators.js';
 import { getCompanyOnlineUserIds, getRealtimeIo, pushNotification } from '../services/realtimeService.js';
-import { askHrAssistant, generateScheduleSuggestionWithAi } from '../services/geminiService.js';
+import { generateScheduleSuggestionWithAi } from '../services/geminiService.js';
 
 // ======================== CONTRACTS ========================
 
@@ -869,69 +869,6 @@ export async function saveNotificationPreferences(req: AuthenticatedRequest, res
 }
 
 // ======================== GEMINI AI ASSISTANT, ANALYTICS & SCHEDULE ========================
-
-export async function aiAssistantChat(req: AuthenticatedRequest, res: Response): Promise<void> {
-  const question = sanitizeText(req.body?.question, 1200);
-  const lang = (['fr', 'en', 'ar'].includes(req.body?.lang) ? req.body.lang : 'fr') as 'fr' | 'en' | 'ar';
-  let conversationId = typeof req.body?.conversationId === 'string' ? req.body.conversationId : '';
-
-  if (!question) {
-    res.status(400).json({ error: 'Question requise.' });
-    return;
-  }
-
-  const db = loadDb();
-  if (!conversationId) {
-    conversationId = newId('aiconv');
-    await mutateDb((d) => {
-      d.ai_conversations.unshift({
-        id: conversationId,
-        company_id: req.user!.companyId,
-        user_id: req.user!.userId,
-        title: question.slice(0, 60),
-        created_at: new Date().toISOString(),
-      });
-    });
-  }
-
-  const history = loadDb()
-    .ai_messages.filter((m) => m.ai_conversation_id === conversationId)
-    .map((m) => ({ role: m.role, content: m.content }));
-
-  const result = await askHrAssistant({
-    db,
-    user: req.user!,
-    question,
-    lang,
-    history,
-  });
-
-  await mutateDb((d) => {
-    const now = new Date().toISOString();
-    d.ai_messages.push(
-      { id: newId('aim'), ai_conversation_id: conversationId, role: 'user', content: question, created_at: now },
-      { id: newId('aim'), ai_conversation_id: conversationId, role: 'assistant', content: result.answer, created_at: now }
-    );
-  });
-
-  res.json({
-    conversationId,
-    answer: result.answer,
-    usedGemini: result.usedGemini,
-    notice: result.error || null,
-  });
-}
-
-export function listAiConversations(req: AuthenticatedRequest, res: Response): void {
-  const db = loadDb();
-  const convs = db.ai_conversations
-    .filter((c) => c.user_id === req.user!.userId)
-    .map((c) => ({
-      ...c,
-      messages: db.ai_messages.filter((m) => m.ai_conversation_id === c.id),
-    }));
-  res.json({ conversations: convs });
-}
 
 export function getAiAnalytics(req: AuthenticatedRequest, res: Response): void {
   const db = loadDb();

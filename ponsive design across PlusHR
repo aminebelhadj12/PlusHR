@@ -1,0 +1,18 @@
+ src/components/ui/ConfirmModal.tsx |  13 [32m+[m[31m--[m
+ src/components/ui/DataTable.tsx    |  14 [32m++[m[31m--[m
+ src/index.css                      | 161 [32m+++++++++++++++++++++++++++++++++++++[m
+ src/layouts/AppLayout.tsx          |  50 [32m++++++[m[31m------[m
+ src/pages/AiAnalyticsPage.tsx      |  12 [32m+[m[31m--[m
+ src/pages/AiAssistantPage.tsx      |  10 [32m+[m[31m--[m
+ src/pages/AiSchedulePage.tsx       |   4 [32m+[m[31m-[m
+ src/pages/BackupsPage.tsx          |   2 [32m+[m[31m-[m
+ src/pages/ChangePasswordPage.tsx   |   2 [32m+[m[31m-[m
+ src/pages/DashboardPage.tsx        |  46 [32m+++++[m[31m------[m
+ src/pages/EmployeeDossierPage.tsx  |   2 [32m+[m[31m-[m
+ src/pages/LoginPage.tsx            |  16 [32m++[m[31m--[m
+ src/pages/MessagesPage.tsx         |  10 [32m+[m[31m--[m
+ src/pages/ReportsPage.tsx          |   2 [32m+[m[31m-[m
+ src/pages/SchedulesPage.tsx        |   2 [32m+[m[31m-[m
+ src/pages/TasksPage.tsx            |   2 [32m+[m[31m-[m
+ src/routes/AppRouter.tsx           |   4 [32m+[m[31m-[m
+ 17 files changed, 257 insertions(+), 95 deletions(-)

@@ -32,6 +32,7 @@ import { AiSchedulePage } from '../pages/AiSchedulePage';
 import { ReportsPage } from '../pages/ReportsPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { ProfilePage } from '../pages/ProfilePage';
+import { LandingPage } from '../pages/LandingPage';
 
 const AccessDeniedView: React.FC = () => {
   const navigate = useNavigate();
@@ -60,7 +61,7 @@ const ProtectedRoute: React.FC<{ roles?: RoleCode[]; children: React.ReactNode }
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8FAFC] dark:bg-[#0B1120] gap-4">
+      <div className="min-h-dvh flex flex-col items-center justify-center bg-[#F8FAFC] dark:bg-[#0B1120] gap-4">
         <BrandLogo />
         <div className="text-xs text-slate-500">Chargement de votre espace sécurisé…</div>
       </div>
@@ -91,7 +92,7 @@ export const AppRouter: React.FC = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8FAFC] dark:bg-[#0B1120] gap-4">
+      <div className="min-h-dvh flex flex-col items-center justify-center bg-[#F8FAFC] dark:bg-[#0B1120] gap-4">
         <BrandLogo />
         <div className="text-xs text-slate-500">Initialisation +HR…</div>
       </div>
@@ -117,7 +118,7 @@ export const AppRouter: React.FC = () => {
           element={user ? <ChangePasswordPage /> : <Navigate to="/login" replace />}
         />
 
-        <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        <Route path="/" element={user ? <ProtectedRoute><DashboardPage /></ProtectedRoute> : <LandingPage />} />
         <Route path="/companies" element={<ProtectedRoute roles={['SUPER_ADMIN']}><CompaniesPage /></ProtectedRoute>} />
         <Route path="/backups" element={<ProtectedRoute roles={['SUPER_ADMIN']}><BackupsPage /></ProtectedRoute>} />
         <Route path="/employees" element={<ProtectedRoute roles={['COMPANY_ADMIN', 'HR_MANAGER', 'MANAGER']}><EmployeesPage /></ProtectedRoute>} />

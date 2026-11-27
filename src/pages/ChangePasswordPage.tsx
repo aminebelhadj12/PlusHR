@@ -39,7 +39,7 @@ export const ChangePasswordPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#F8FAFC] dark:bg-[#0B1120]">
+    <div className="min-h-dvh flex items-center justify-center p-4 bg-[#F8FAFC] dark:bg-[#0B1120]">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 sm:p-8">
         <BrandLogo />
         <h1 className="mt-5 font-display text-xl font-bold text-slate-900 dark:text-white">

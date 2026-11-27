@@ -120,13 +120,13 @@ export const AiAnalyticsPage: React.FC = () => {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="dashboard-panels grid gap-4">
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
           <h2 className="font-display text-base font-semibold text-slate-900 dark:text-white mb-4">
             Évolution des absences, retards et heures sup.
           </h2>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="chart-viewport">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <LineChart data={data.trendSeries}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} />
@@ -145,8 +145,8 @@ export const AiAnalyticsPage: React.FC = () => {
           <h2 className="font-display text-base font-semibold text-slate-900 dark:text-white mb-4">
             Taux par département (%) & Charge tâches
           </h2>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="chart-viewport">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={data.deptAnalytics}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis dataKey="department" tick={{ fontSize: 11 }} />
@@ -167,7 +167,7 @@ export const AiAnalyticsPage: React.FC = () => {
         <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 font-display text-sm font-semibold">
           Synthèse analytique par département
         </div>
-        <div className="overflow-x-auto">
+        <div className="responsive-scroll" role="region" aria-label="Indicateurs par département" tabIndex={0}>
           <table className="w-full text-sm text-start">
             <thead className="bg-slate-50 dark:bg-slate-800/50 text-xs text-slate-500">
               <tr>

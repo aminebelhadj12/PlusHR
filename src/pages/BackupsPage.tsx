@@ -138,7 +138,7 @@ export function BackupsPage() {
         </form>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <div className="responsive-scroll rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900" role="region" aria-label={t(lang, 'backups')} tabIndex={0}>
         {backups?.length ? (
           <table className="w-full text-start text-sm">
             <thead className="bg-slate-50 dark:bg-slate-800">

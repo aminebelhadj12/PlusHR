@@ -194,9 +194,9 @@ export const MessagesPage: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(100vh-220px)] min-h-[500px]">
+      <div className="conversation-layout grid grid-cols-1 gap-3 lg:grid-rows-1">
         {/* Left pane: conversations & colleagues */}
-        <aside className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col overflow-hidden">
+        <aside className="conversation-sidebar bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col overflow-hidden">
           <div className="p-3 border-b border-slate-200 dark:border-slate-800">
             <div className="relative">
               <Search className="w-4 h-4 text-slate-400 absolute start-3 top-1/2 -translate-y-1/2" />
@@ -209,7 +209,7 @@ export const MessagesPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain divide-y divide-slate-100 dark:divide-slate-800">
             {conversations.length > 0 && (
               <div className="p-2">
                 <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
@@ -286,7 +286,7 @@ export const MessagesPage: React.FC = () => {
         </aside>
 
         {/* Right pane: chat thread */}
-        <section className="lg:col-span-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col overflow-hidden">
+        <section className="conversation-content bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col overflow-hidden">
           {!activeConvId ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-slate-400">
               <MessageSquare className="w-10 h-10 mb-2" />
@@ -308,7 +308,7 @@ export const MessagesPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 space-y-3">
                 {messages.map((m) => {
                   const isMine = m.sender_user_id === user?.id;
                   const parentMsg = m.reply_to_message_id ? messages.find((x) => x.id === m.reply_to_message_id) : null;

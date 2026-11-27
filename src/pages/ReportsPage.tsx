@@ -198,7 +198,7 @@ export const ReportsPage: React.FC = () => {
         ) : !report || report.rows.length === 0 ? (
           <div className="p-12 text-center text-sm text-slate-400">Aucune donnée pour ces critères.</div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="responsive-scroll" role="region" aria-label="Données du rapport" tabIndex={0}>
             <table className="w-full text-sm text-start">
               <thead className="bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
                 <tr>
