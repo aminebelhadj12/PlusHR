@@ -128,7 +128,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login');
+    navigate('/', { replace: true });
   };
 
   const getNavLabel = (item: NavItem) =>

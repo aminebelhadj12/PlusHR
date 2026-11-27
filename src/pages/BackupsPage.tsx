@@ -91,7 +91,7 @@ export function BackupsPage() {
         await apiRequest(url, options);
         await logout();
         addToast(t(lang, 'backupRestored'), 'success');
-        navigate('/login', { replace: true });
+        navigate('/', { replace: true });
       }
     } catch (error) {
       setError((error as Error).message);

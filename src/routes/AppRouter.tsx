@@ -6,7 +6,6 @@ import { AppLayout } from '../layouts/AppLayout';
 import { BrandLogo } from '../components/ui/BrandLogo';
 import type { RoleCode } from '../types';
 
-import { LoginPage } from '../pages/LoginPage';
 import { ChangePasswordPage } from '../pages/ChangePasswordPage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { BackupsPage } from '../pages/BackupsPage';
@@ -108,7 +107,7 @@ export const AppRouter: React.FC = () => {
             user ? (
               <Navigate to={user.must_change_password ? '/change-password' : '/'} replace />
             ) : (
-              <LoginPage />
+              <LandingPage />
             )
           }
         />
