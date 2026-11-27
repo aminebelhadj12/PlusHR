@@ -9,8 +9,6 @@ type LandingCopy = {
   featuresNav: string;
   howNav: string;
   securityNav: string;
-  login: string;
-  workspace: string;
   discover: string;
   heroEyebrow: string;
   headlineBefore: string;
@@ -49,8 +47,6 @@ export const landingCopy: Record<AppLang, LandingCopy> = {
     featuresNav: 'Fonctionnalités',
     howNav: 'Comment ça marche',
     securityNav: 'Sécurité',
-    login: 'Se connecter',
-    workspace: 'Accéder à mon espace',
     discover: 'Découvrir +HR',
     heroEyebrow: 'Votre partenaire RH intelligent',
     headlineBefore: 'Simplifiez vos RH, valorisez vos ',
@@ -106,8 +102,6 @@ export const landingCopy: Record<AppLang, LandingCopy> = {
     featuresNav: 'Features',
     howNav: 'How it works',
     securityNav: 'Security',
-    login: 'Sign in',
-    workspace: 'Go to my workspace',
     discover: 'Discover +HR',
     heroEyebrow: 'Your intelligent HR partner',
     headlineBefore: 'Simplify HR, empower your ',
@@ -163,8 +157,6 @@ export const landingCopy: Record<AppLang, LandingCopy> = {
     featuresNav: 'الميزات',
     howNav: 'كيف تعمل المنصة',
     securityNav: 'الأمان',
-    login: 'تسجيل الدخول',
-    workspace: 'الدخول إلى مساحة العمل',
     discover: 'اكتشف +HR',
     heroEyebrow: 'شريكك الذكي للموارد البشرية',
     headlineBefore: 'بسّط إدارة الموارد البشرية وارتقِ بـ',

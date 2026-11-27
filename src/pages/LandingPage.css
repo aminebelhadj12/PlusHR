@@ -128,37 +128,6 @@
   color: #167c70;
 }
 
-.plus-landing-nav-login,
-.plus-landing-nav-workspace {
-  display: inline-flex;
-  min-height: 40px;
-  align-items: center;
-  justify-content: center;
-  padding: 0 15px;
-  border-radius: 13px;
-  color: var(--landing-ink);
-  font-size: 11px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
-}
-
-.plus-landing-nav-login {
-  border: 1px solid #e8e1d8;
-  background: rgb(255 255 255 / 68%);
-}
-
-.plus-landing-nav-workspace {
-  background: linear-gradient(135deg, #ff8766, var(--landing-coral));
-  box-shadow: 0 7px 16px -9px rgb(232 100 70 / 65%);
-  color: white;
-}
-
-.plus-landing-nav-login:hover,
-.plus-landing-nav-workspace:hover {
-  transform: translateY(-1px);
-}
-
 .plus-landing-hero {
   position: relative;
   width: min(100%, 1440px);
@@ -1080,12 +1049,6 @@
   transform: translateY(-2px);
 }
 
-.plus-landing-button-primary {
-  background: linear-gradient(120deg, #ff8766, #f66d50);
-  box-shadow: 0 10px 19px -10px rgb(240 112 81 / 75%);
-  color: white;
-}
-
 .plus-landing-button-secondary {
   border-color: rgb(255 255 255 / 25%);
   background: rgb(255 255 255 / 8%);
@@ -1145,7 +1108,6 @@
 @media (max-width: 1100px) {
   .plus-landing-nav-links { gap: 17px; }
   .plus-landing-nav-actions { gap: 7px; }
-  .plus-landing-nav-workspace { padding-inline: 11px; }
   .plus-landing-hero-grid {
     grid-template-columns: minmax(0, 1fr) minmax(340px, 0.88fr);
     gap: 40px;
@@ -1181,9 +1143,6 @@
   .plus-landing-brand img,
   .plus-landing-brand svg { width: 32px; height: 32px; }
   .plus-landing-nav-actions { gap: 6px; }
-  .plus-landing-nav-login,
-  .plus-landing-nav-workspace { min-height: 36px; padding-inline: 10px; font-size: 10px; }
-  .plus-landing-nav-workspace { display: none; }
   .plus-landing-languages { padding: 2px; }
   .plus-landing-languages button { min-width: 29px; min-height: 28px; font-size: 9px; }
   .plus-landing-hero { padding: 38px 19px 60px; }
@@ -1239,7 +1198,6 @@
 @media (max-width: 390px) {
   .plus-landing-header { padding-inline: 11px; }
   .plus-landing-nav-actions { gap: 4px; }
-  .plus-landing-nav-login { padding-inline: 8px; }
   .plus-landing-languages button { min-width: 26px; padding-inline: 4px; }
   .plus-landing-hero { padding-inline: 15px; }
   .plus-landing-roles { grid-template-columns: repeat(5, minmax(0, 1fr)); }

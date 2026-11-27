@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff, KeyRound, LifeBuoy, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { BrandLogo } from '../components/ui/BrandLogo';
-import { Modal } from '../components/ui/ConfirmModal';
+import { OtpRecoveryModal } from '../components/ui/OtpRecoveryModal';
 import { useApp } from '../contexts/AppContext';
 import { apiRequest } from '../services/api';
 import type { AuthUser } from '../types';
@@ -30,6 +30,31 @@ const loginCopy = {
     supportHint: "Contactez votre Direction RH",
     note: "Inscription publique désactivée : les comptes employés sont créés et validés par votre Direction RH.",
     administrationNote: "Votre compte est créé et géré par votre administration RH.",
+    recoveryTitle: "Récupération du mot de passe",
+    recoveryClose: "Fermer la fenêtre de récupération",
+    recoveryEmailDescription: "Saisissez votre adresse e-mail professionnelle. Si un compte actif y est associé, vous recevrez un code à usage unique.",
+    recoveryEmailLabel: "E-mail professionnel",
+    recoveryEmailPlaceholder: "nom@entreprise.ma",
+    recoveryCodeLabel: "Code à 6 chiffres",
+    recoveryCodeDescription: "Saisissez le code envoyé à votre adresse e-mail professionnelle.",
+    recoveryNewPasswordLabel: "Nouveau mot de passe",
+    recoveryNewPasswordPlaceholder: "Min. 8 caractères, 1 majuscule, 1 chiffre",
+    recoveryConfirmPasswordLabel: "Confirmer le mot de passe",
+    recoveryRequestCode: "Envoyer le code",
+    recoverySendingCode: "Envoi du code…",
+    recoveryVerifyCode: "Vérifier le code",
+    recoveryVerifyingCode: "Vérification…",
+    recoveryResetPassword: "Réinitialiser le mot de passe",
+    recoveryResettingPassword: "Réinitialisation…",
+    recoveryEmailSent: "Si un compte actif est associé à cette adresse, vous recevrez un code de réinitialisation par e-mail.",
+    recoveryCodeVerified: "Code vérifié. Vous pouvez choisir un nouveau mot de passe.",
+    recoveryValidationEmailRequired: "Saisissez votre adresse e-mail professionnelle.",
+    recoveryValidationEmailInvalid: "Saisissez une adresse e-mail valide.",
+    recoveryValidationCode: "Saisissez le code à 6 chiffres reçu par e-mail.",
+    recoveryValidationPassword: "Saisissez un nouveau mot de passe.",
+    recoveryValidationConfirmPassword: "Confirmez votre nouveau mot de passe.",
+    recoveryValidationPasswordMismatch: "Les mots de passe ne correspondent pas.",
+    recoverySuccess: "Mot de passe réinitialisé. Connectez-vous maintenant.",
     label: "Plateforme RH intelligente",
     heading: "Pilotez vos talents, présences, congés et plannings en toute sérénité.",
     description: "Architecture SaaS Multi-Entreprises, isolation stricte par entreprise, validations sécurisées et assistance RH intelligente.",
@@ -58,6 +83,31 @@ const loginCopy = {
     supportHint: "Contact your HR department",
     note: "Public registration is disabled. Employee accounts are created and approved by your HR department.",
     administrationNote: "Your account is created and managed by your HR administration.",
+    recoveryTitle: "Password recovery",
+    recoveryClose: "Close password recovery",
+    recoveryEmailDescription: "Enter your work email. If it is linked to an active account, you will receive a one-time code.",
+    recoveryEmailLabel: "Work email",
+    recoveryEmailPlaceholder: "name@company.com",
+    recoveryCodeLabel: "6-digit code",
+    recoveryCodeDescription: "Enter the code sent to your work email.",
+    recoveryNewPasswordLabel: "New password",
+    recoveryNewPasswordPlaceholder: "At least 8 characters, 1 uppercase letter, 1 number",
+    recoveryConfirmPasswordLabel: "Confirm password",
+    recoveryRequestCode: "Send code",
+    recoverySendingCode: "Sending code…",
+    recoveryVerifyCode: "Verify code",
+    recoveryVerifyingCode: "Verifying…",
+    recoveryResetPassword: "Reset password",
+    recoveryResettingPassword: "Resetting…",
+    recoveryEmailSent: "If an active account is linked to this address, you will receive a password reset code by email.",
+    recoveryCodeVerified: "Code verified. You can choose a new password.",
+    recoveryValidationEmailRequired: "Enter your work email address.",
+    recoveryValidationEmailInvalid: "Enter a valid email address.",
+    recoveryValidationCode: "Enter the 6-digit code sent to your email.",
+    recoveryValidationPassword: "Enter a new password.",
+    recoveryValidationConfirmPassword: "Confirm your new password.",
+    recoveryValidationPasswordMismatch: "The passwords do not match.",
+    recoverySuccess: "Password reset. You can now sign in.",
     label: "Intelligent HR platform",
     heading: "Manage your people, attendance, time off, and schedules with confidence.",
     description: "Multi-company SaaS architecture, strict company isolation, secure approvals, and intelligent HR assistance.",
@@ -86,6 +136,31 @@ const loginCopy = {
     supportHint: "تواصل مع إدارة الموارد البشرية",
     note: "التسجيل العام معطّل. تتولى إدارة الموارد البشرية إنشاء حسابات الموظفين واعتمادها.",
     administrationNote: "يُنشأ حسابك وتديره إدارة الموارد البشرية في مؤسستك.",
+    recoveryTitle: "استعادة كلمة المرور",
+    recoveryClose: "إغلاق نافذة استعادة كلمة المرور",
+    recoveryEmailDescription: "أدخل بريدك الإلكتروني المهني. إذا كان مرتبطًا بحساب نشط، فستتلقى رمزًا لمرة واحدة.",
+    recoveryEmailLabel: "البريد الإلكتروني المهني",
+    recoveryEmailPlaceholder: "name@company.com",
+    recoveryCodeLabel: "الرمز المكوّن من 6 أرقام",
+    recoveryCodeDescription: "أدخل الرمز المرسل إلى بريدك الإلكتروني المهني.",
+    recoveryNewPasswordLabel: "كلمة المرور الجديدة",
+    recoveryNewPasswordPlaceholder: "8 أحرف على الأقل، حرف كبير واحد ورقم واحد",
+    recoveryConfirmPasswordLabel: "تأكيد كلمة المرور",
+    recoveryRequestCode: "إرسال الرمز",
+    recoverySendingCode: "جارٍ إرسال الرمز…",
+    recoveryVerifyCode: "تحقق من الرمز",
+    recoveryVerifyingCode: "جارٍ التحقق…",
+    recoveryResetPassword: "إعادة تعيين كلمة المرور",
+    recoveryResettingPassword: "جارٍ إعادة التعيين…",
+    recoveryEmailSent: "إذا كان هذا البريد مرتبطًا بحساب نشط، فستتلقى رمزًا لإعادة تعيين كلمة المرور.",
+    recoveryCodeVerified: "تم التحقق من الرمز. يمكنك اختيار كلمة مرور جديدة.",
+    recoveryValidationEmailRequired: "أدخل بريدك الإلكتروني المهني.",
+    recoveryValidationEmailInvalid: "أدخل عنوان بريد إلكتروني صالحًا.",
+    recoveryValidationCode: "أدخل الرمز المكوّن من 6 أرقام الذي وصلك عبر البريد الإلكتروني.",
+    recoveryValidationPassword: "أدخل كلمة مرور جديدة.",
+    recoveryValidationConfirmPassword: "أكّد كلمة المرور الجديدة.",
+    recoveryValidationPasswordMismatch: "كلمتا المرور غير متطابقتين.",
+    recoverySuccess: "تمت إعادة تعيين كلمة المرور. يمكنك تسجيل الدخول الآن.",
     label: "منصة ذكية للموارد البشرية",
     heading: "أدر المواهب والحضور والإجازات والجداول بكل ثقة.",
     description: "بنية سحابية متعددة الشركات، وعزل صارم لبيانات كل شركة، واعتمادات آمنة، ومساعدة ذكية للموارد البشرية.",
@@ -135,6 +210,7 @@ export const LoginPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }
   const [confirmPassword, setConfirmPassword] = useState('');
   const [otpNotice, setOtpNotice] = useState('');
   const [otpError, setOtpError] = useState('');
+  const [otpValidation, setOtpValidation] = useState('');
   const [otpBusy, setOtpBusy] = useState(false);
 
   useEffect(() => {
@@ -173,13 +249,22 @@ export const LoginPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }
     e.preventDefault();
     setOtpError('');
     setOtpNotice('');
+    setOtpValidation('');
+    if (!otpEmail.trim()) {
+      setOtpValidation(copy.recoveryValidationEmailRequired);
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(otpEmail.trim())) {
+      setOtpValidation(copy.recoveryValidationEmailInvalid);
+      return;
+    }
     setOtpBusy(true);
     try {
-      const res = await apiRequest<{ message: string }>('/api/auth/otp/request', {
+      await apiRequest<{ message: string }>('/api/auth/otp/request', {
         method: 'POST',
         body: JSON.stringify({ email: otpEmail }),
       });
-      setOtpNotice(res.message);
+      setOtpNotice(copy.recoveryEmailSent);
       setOtpStep('verify');
     } catch (err) {
       setOtpError((err as Error).message);
@@ -191,6 +276,11 @@ export const LoginPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setOtpError('');
+    setOtpValidation('');
+    if (!/^\d{6}$/.test(otpCode)) {
+      setOtpValidation(copy.recoveryValidationCode);
+      return;
+    }
     setOtpBusy(true);
     try {
       const response = await apiRequest<{ resetToken: string }>('/api/auth/otp/verify-reset', {
@@ -199,6 +289,7 @@ export const LoginPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }
       });
       setResetToken(response.resetToken);
       setOtpCode('');
+      setOtpNotice(copy.recoveryCodeVerified);
       setOtpStep('reset');
     } catch (err) {
       setOtpError((err as Error).message);
@@ -210,8 +301,17 @@ export const LoginPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setOtpError('');
+    setOtpValidation('');
+    if (!newPassword) {
+      setOtpValidation(copy.recoveryValidationPassword);
+      return;
+    }
+    if (!confirmPassword) {
+      setOtpValidation(copy.recoveryValidationConfirmPassword);
+      return;
+    }
     if (newPassword !== confirmPassword) {
-      setOtpError('Les mots de passe ne correspondent pas.');
+      setOtpValidation(copy.recoveryValidationPasswordMismatch);
       return;
     }
     setOtpBusy(true);
@@ -220,7 +320,7 @@ export const LoginPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }
         method: 'POST',
         body: JSON.stringify({ email: otpEmail, resetToken, newPassword }),
       });
-      addToast('Mot de passe réinitialisé. Connectez-vous maintenant.', 'success');
+      addToast(copy.recoverySuccess, 'success');
       setOtpModalOpen(false);
       setOtpStep('email');
       setResetToken('');
@@ -239,6 +339,7 @@ export const LoginPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }
     setOtpCode('');
     setResetToken('');
     setOtpNotice('');
+    setOtpValidation('');
     setNewPassword('');
     setConfirmPassword('');
     setOtpModalOpen(true);
@@ -449,107 +550,123 @@ export const LoginPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }
       </RootElement>
 
       {/* OTP Password Recovery Modal */}
-      <Modal open={otpModalOpen} title="Récupération par code OTP" onClose={() => {
-        setOtpModalOpen(false);
-        setResetToken('');
-        setOtpCode('');
-      }}>
-        {otpError && (
-          <div className="mb-3 p-2.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-xs text-red-700 dark:text-red-300">
-            {otpError}
-          </div>
-        )}
-        {otpNotice && (
-          <div className="mb-3 p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 text-xs text-blue-700 dark:text-blue-300">
-            {otpNotice}
-          </div>
-        )}
+      <OtpRecoveryModal
+        open={otpModalOpen}
+        title={copy.recoveryTitle}
+        closeLabel={copy.recoveryClose}
+        onClose={() => {
+          setOtpModalOpen(false);
+          setResetToken('');
+          setOtpCode('');
+          setOtpValidation('');
+          setOtpError('');
+          setOtpNotice('');
+        }}
+      >
+        {otpError && <p className="otp-recovery-error" role="alert" aria-live="assertive">{otpError}</p>}
+        {otpValidation && <p className="otp-recovery-error" id="otp-validation-error" role="alert" aria-live="assertive">{otpValidation}</p>}
+        {otpNotice && <p className="otp-recovery-success" role="status" aria-live="polite">{otpNotice}</p>}
 
         {otpStep === 'email' && (
-          <form onSubmit={handleRequestOtp} className="space-y-4">
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Saisissez votre adresse e-mail professionnelle. Le code envoyé par e-mail est valable 5 minutes.
-            </p>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Email professionnel</label>
+          <form noValidate onSubmit={handleRequestOtp} className="otp-recovery-form">
+            <p className="otp-recovery-description" id="otp-email-description">{copy.recoveryEmailDescription}</p>
+            <div className="otp-recovery-field">
+              <label htmlFor="otp-recovery-email">{copy.recoveryEmailLabel}</label>
               <input
+                id="otp-recovery-email"
+                className="otp-recovery-input"
                 type="email"
+                autoComplete="email"
+                inputMode="email"
                 required
                 value={otpEmail}
-                onChange={(e) => setOtpEmail(e.target.value)}
-                placeholder="nom@entreprise.ma"
-                className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800"
+                onChange={(e) => {
+                  setOtpEmail(e.target.value);
+                  setOtpValidation('');
+                }}
+                placeholder={copy.recoveryEmailPlaceholder}
+                aria-invalid={Boolean(otpValidation)}
+                aria-describedby={otpValidation ? 'otp-email-description otp-validation-error' : 'otp-email-description'}
               />
             </div>
-            <button
-              type="submit"
-              disabled={otpBusy}
-              className="w-full py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              {otpBusy ? 'Envoi…' : 'Envoyer le code OTP'}
+            <button type="submit" className="otp-recovery-submit" disabled={otpBusy}>
+              {otpBusy ? copy.recoverySendingCode : copy.recoveryRequestCode}
             </button>
           </form>
         )}
 
         {otpStep === 'verify' && (
-          <form onSubmit={handleVerifyOtp} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Code à 6 chiffres</label>
+          <form noValidate onSubmit={handleVerifyOtp} className="otp-recovery-form">
+            <div className="otp-recovery-field">
+              <label htmlFor="otp-recovery-code">{copy.recoveryCodeLabel}</label>
               <input
+                id="otp-recovery-code"
+                className="otp-recovery-input otp-recovery-input-code"
                 type="text"
                 required
                 maxLength={6}
                 value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                onChange={(e) => {
+                  setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6));
+                  setOtpValidation('');
+                }}
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                className="w-full px-3 py-2 text-center font-mono text-lg tracking-widest border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800"
+                aria-invalid={Boolean(otpValidation)}
+                aria-describedby={otpValidation ? 'otp-code-description otp-validation-error' : 'otp-code-description'}
               />
+              <span className="otp-recovery-description" id="otp-code-description">{copy.recoveryCodeDescription}</span>
             </div>
-            <button
-              type="submit"
-              disabled={otpBusy}
-              className="w-full py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              Vérifier le code
+            <button type="submit" className="otp-recovery-submit" disabled={otpBusy}>
+              {otpBusy ? copy.recoveryVerifyingCode : copy.recoveryVerifyCode}
             </button>
           </form>
         )}
 
         {otpStep === 'reset' && (
-          <form onSubmit={handleResetPassword} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nouveau mot de passe</label>
+          <form noValidate onSubmit={handleResetPassword} className="otp-recovery-form">
+            <div className="otp-recovery-field">
+              <label htmlFor="otp-recovery-new-password">{copy.recoveryNewPasswordLabel}</label>
               <input
+                id="otp-recovery-new-password"
+                className="otp-recovery-input"
                 type="password"
                 required
+                autoComplete="new-password"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Min. 8 caractères, 1 majuscule, 1 chiffre"
-                className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800"
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  setOtpValidation('');
+                }}
+                placeholder={copy.recoveryNewPasswordPlaceholder}
+                aria-invalid={Boolean(otpValidation)}
+                aria-describedby={otpValidation ? 'otp-validation-error' : undefined}
               />
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Confirmer le mot de passe</label>
+            <div className="otp-recovery-field">
+              <label htmlFor="otp-recovery-confirm-password">{copy.recoveryConfirmPasswordLabel}</label>
               <input
+                id="otp-recovery-confirm-password"
+                className="otp-recovery-input"
                 type="password"
                 required
+                autoComplete="new-password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800"
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  setOtpValidation('');
+                }}
+                aria-invalid={Boolean(otpValidation)}
+                aria-describedby={otpValidation ? 'otp-validation-error' : undefined}
               />
             </div>
-            <button
-              type="submit"
-              disabled={otpBusy}
-              className="w-full py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              <KeyRound className="w-4 h-4" />
-              <span>Réinitialiser le mot de passe</span>
+            <button type="submit" className="otp-recovery-submit" disabled={otpBusy}>
+              <KeyRound size={17} aria-hidden="true" />
+              <span>{otpBusy ? copy.recoveryResettingPassword : copy.recoveryResetPassword}</span>
             </button>
           </form>
         )}
-      </Modal>
+      </OtpRecoveryModal>
     </>
   );
 };

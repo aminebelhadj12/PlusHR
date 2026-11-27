@@ -1,5 +1,4 @@
 import { useEffect, type CSSProperties } from 'react';
-import { Link } from 'react-router-dom';
 import {
   ArrowDown,
   ArrowRight,
@@ -111,8 +110,6 @@ export function LandingPage() {
                 </button>
               ))}
             </div>
-            <Link to="/login" className="plus-landing-nav-login">{copy.login}</Link>
-            <Link to="/login" className="plus-landing-nav-workspace">{copy.workspace}</Link>
           </div>
         </nav>
       </header>
@@ -275,9 +272,6 @@ export function LandingPage() {
             <h2 data-reveal>{copy.ctaHeading}</h2>
             <p data-reveal style={{ '--reveal-delay': '80ms' } as CSSProperties}>{copy.ctaDescription}</p>
             <div className="plus-landing-cta-actions" data-reveal style={{ '--reveal-delay': '160ms' } as CSSProperties}>
-              <Link to="/login" className="plus-landing-button plus-landing-button-primary">
-                {copy.workspace}<ArrowRight size={17} aria-hidden="true" />
-              </Link>
               <a href="#features" className="plus-landing-button plus-landing-button-secondary">
                 {copy.discover}<ArrowRight size={16} aria-hidden="true" />
               </a>
