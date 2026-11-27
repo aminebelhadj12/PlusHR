@@ -1,40 +1,46 @@
 import { useEffect, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  ArrowDown,
   ArrowRight,
   BarChart3,
-  Bot,
   Building2,
   CalendarDays,
+  Check,
   Clock3,
   FileText,
-  MessageSquare,
+  Fingerprint,
+  Globe2,
+  LockKeyhole,
   ShieldCheck,
   Sparkles,
-  Users,
+  UserRound,
+  UsersRound,
   Wallet,
 } from 'lucide-react';
-import { LandingGlobe } from '../components/LandingGlobe';
 import { BrandLogo } from '../components/ui/BrandLogo';
+import { LoginPage } from './LoginPage';
 import { useApp } from '../contexts/AppContext';
 import type { AppLang } from '../types';
 import { landingCopy } from '../utils/landingCopy';
 import './LandingPage.css';
 
 const languageNames: Record<AppLang, string> = { fr: 'Français', en: 'English', ar: 'العربية' };
+const roleIcons = [Globe2, Building2, Fingerprint, UserRound, UsersRound];
+const moduleIcons = [UsersRound, Clock3, CalendarDays, FileText, Wallet, CalendarDays, Sparkles, BarChart3];
 const featureIcons = [
   Building2,
-  Users,
+  UsersRound,
   Clock3,
   CalendarDays,
   Wallet,
-  FileText,
+  CalendarDays,
   Sparkles,
-  MessageSquare,
+  UsersRound,
   BarChart3,
   ShieldCheck,
 ];
-const diagramIcons = [Users, Clock3, Wallet, Bot];
+const workflowIcons = [Building2, UsersRound, BarChart3];
 
 export function LandingPage() {
   const { lang, setLang } = useApp();
@@ -46,7 +52,7 @@ export function LandingPage() {
     const root = document.documentElement;
     const previousScrollBehavior = root.style.scrollBehavior;
     const syncScrollBehavior = () => {
-      root.style.scrollBehavior = motionPreference.matches ? 'auto' : previousScrollBehavior;
+      root.style.scrollBehavior = motionPreference.matches ? 'auto' : 'smooth';
     };
     syncScrollBehavior();
     motionPreference.addEventListener('change', syncScrollBehavior);
@@ -62,7 +68,7 @@ export function LandingPage() {
             observer?.unobserve(entry.target);
           }
         });
-      }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
+      }, { threshold: 0.16, rootMargin: '0px 0px -7% 0px' });
 
       revealItems.forEach((item) => observer?.observe(item));
     }
@@ -75,20 +81,20 @@ export function LandingPage() {
   }, []);
 
   return (
-    <div className="plus-landing">
+    <div className="plus-landing" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       <div className="plus-landing-backdrop" aria-hidden="true" />
-      <LandingGlobe />
-
-      <header className="plus-landing-hero" id="top">
+      <header className="plus-landing-header" id="top">
         <nav className="plus-landing-nav" aria-label={copy.navigationLabel}>
-          <Link to="/" className="plus-landing-brand" aria-label={copy.homeLabel}>
+          <a href="#top" className="plus-landing-brand" aria-label={copy.homeLabel}>
             <BrandLogo variant="icon" />
             <span>+HR</span>
-          </Link>
+          </a>
 
           <div className="plus-landing-nav-links">
+            <a href="#top">{copy.home}</a>
             <a href="#features">{copy.featuresNav}</a>
-            <a href="#platform">{copy.platformNav}</a>
+            <a href="#how-it-works">{copy.howNav}</a>
+            <a href="#security">{copy.securityNav}</a>
           </div>
 
           <div className="plus-landing-nav-actions">
@@ -106,48 +112,99 @@ export function LandingPage() {
               ))}
             </div>
             <Link to="/login" className="plus-landing-nav-login">{copy.login}</Link>
+            <Link to="/login" className="plus-landing-nav-workspace">{copy.workspace}</Link>
           </div>
         </nav>
-
-        <div className="plus-landing-hero-copy">
-          <div className="plus-landing-kicker" data-reveal style={{ '--reveal-delay': '0ms' } as CSSProperties}>
-            <span className="plus-landing-kicker-mark"><Sparkles size={14} aria-hidden="true" /></span>
-            <span>{copy.productTitle}</span>
-          </div>
-          <h1 data-reveal style={{ '--reveal-delay': '60ms' } as CSSProperties}>{copy.headline}</h1>
-          <p data-reveal style={{ '--reveal-delay': '180ms' } as CSSProperties}>{copy.description}</p>
-          <div className="plus-landing-hero-actions" data-reveal style={{ '--reveal-delay': '300ms' } as CSSProperties}>
-            <Link to="/login" className="plus-landing-button plus-landing-button-primary">
-              {copy.login}<ArrowRight size={17} aria-hidden="true" />
-            </Link>
-            <a href="#features" className="plus-landing-button plus-landing-button-secondary">
-              {copy.discover}<ArrowRight size={16} aria-hidden="true" />
-            </a>
-          </div>
-        </div>
-
-        <div className="plus-landing-capabilities" data-reveal style={{ '--reveal-delay': '420ms' } as CSSProperties}>
-          <span>{copy.features[0].title}</span>
-          <i aria-hidden="true" />
-          <span>{copy.features[2].title}</span>
-          <i aria-hidden="true" />
-          <span>{copy.features[6].title}</span>
-          <i aria-hidden="true" />
-          <span>{copy.features[9].title}</span>
-        </div>
-        <a className="plus-landing-scroll-cue" href="#features" aria-label={copy.discover}>
-          <span />
-        </a>
       </header>
 
       <main>
+        <section className="plus-landing-hero" aria-labelledby="plus-landing-title">
+          <div className="plus-landing-hero-glow plus-landing-hero-glow-coral" aria-hidden="true" />
+          <div className="plus-landing-hero-glow plus-landing-hero-glow-teal" aria-hidden="true" />
+          <div className="plus-landing-hero-grid">
+            <div className="plus-landing-hero-copy">
+              <div className="plus-landing-kicker" data-reveal>
+                <span><Sparkles size={14} aria-hidden="true" /></span>
+                {copy.heroEyebrow}
+              </div>
+              <h1 id="plus-landing-title" data-reveal style={{ '--reveal-delay': '70ms' } as CSSProperties}>
+                {copy.headlineBefore}
+                <span className="plus-landing-highlight">
+                  {copy.headlineAccent}
+                  <svg viewBox="0 0 220 18" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M4 13C46 4 120 3 216 10" />
+                  </svg>
+                </span>
+                {copy.headlineAfter}
+              </h1>
+              <p className="plus-landing-hero-description" data-reveal style={{ '--reveal-delay': '140ms' } as CSSProperties}>
+                {copy.description}
+              </p>
+
+              <ul className="plus-landing-benefits" data-reveal style={{ '--reveal-delay': '210ms' } as CSSProperties}>
+                {copy.benefits.map((benefit) => (
+                  <li key={benefit}><span><Check size={14} aria-hidden="true" /></span>{benefit}</li>
+                ))}
+              </ul>
+
+              <div className="plus-landing-role-panel" data-reveal style={{ '--reveal-delay': '280ms' } as CSSProperties}>
+                <div>
+                  <span className="plus-landing-role-label">{copy.rolesLabel}</span>
+                  <h2>{copy.rolesTitle}</h2>
+                </div>
+                <ul className="plus-landing-roles">
+                  {copy.roles.map((role, index) => {
+                    const Icon = roleIcons[index];
+                    return (
+                      <li key={role} title={role}>
+                        <span className={`plus-landing-role-icon plus-landing-role-icon-${index + 1}`}>
+                          <Icon size={16} aria-hidden="true" />
+                        </span>
+                        <span>{role}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
+
+            <div className="plus-landing-auth-wrap" data-reveal style={{ '--reveal-delay': '120ms' } as CSSProperties}>
+              <div className="plus-landing-auth-halo" aria-hidden="true" />
+              <LoginPage embedded />
+            </div>
+          </div>
+          <a className="plus-landing-scroll-cue" href="#modules" aria-label={copy.discover}>
+            <ArrowDown size={16} aria-hidden="true" />
+          </a>
+        </section>
+
+        <section className="plus-landing-marquee-section" id="modules" aria-label={copy.modulesLabel}>
+          <p>{copy.modulesLabel}</p>
+          <div className="plus-landing-marquee-viewport">
+            <div className="plus-landing-marquee-track">
+              {[0, 1].map((repeat) => (
+                <div className="plus-landing-marquee-group" key={repeat} aria-hidden={repeat === 1}>
+                  {copy.modules.map((module, index) => {
+                    const Icon = moduleIcons[index];
+                    return (
+                      <span className="plus-landing-module" key={module}>
+                        <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
+                        {module}
+                      </span>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="plus-landing-section plus-landing-features" id="features">
           <div className="plus-landing-section-heading">
-            <span className="plus-landing-eyebrow" data-reveal>{copy.featureEyebrow}</span>
-            <h2 data-reveal style={{ '--reveal-delay': '80ms' } as CSSProperties}>{copy.featureHeading}</h2>
-            <p data-reveal style={{ '--reveal-delay': '160ms' } as CSSProperties}>{copy.featureDescription}</p>
+            <span className="plus-landing-eyebrow" data-reveal>{copy.featuresEyebrow}</span>
+            <h2 data-reveal style={{ '--reveal-delay': '70ms' } as CSSProperties}>{copy.featuresHeading}</h2>
+            <p data-reveal style={{ '--reveal-delay': '140ms' } as CSSProperties}>{copy.featuresDescription}</p>
           </div>
-
           <div className="plus-landing-feature-grid">
             {copy.features.map((feature, index) => {
               const Icon = featureIcons[index];
@@ -156,9 +213,9 @@ export function LandingPage() {
                   className="plus-landing-feature-card"
                   key={feature.title}
                   data-reveal
-                  style={{ '--reveal-delay': `${(index % 5) * 70}ms` } as CSSProperties}
+                  style={{ '--reveal-delay': `${(index % 5) * 55}ms` } as CSSProperties}
                 >
-                  <span className="plus-landing-feature-icon"><Icon size={22} strokeWidth={1.7} aria-hidden="true" /></span>
+                  <span className="plus-landing-feature-icon"><Icon size={21} strokeWidth={1.8} aria-hidden="true" /></span>
                   <h3>{feature.title}</h3>
                   <p>{feature.description}</p>
                 </article>
@@ -167,77 +224,75 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="plus-landing-section plus-landing-platform" id="platform">
-          <div className="plus-landing-platform-copy">
-            <span className="plus-landing-eyebrow" data-reveal>{copy.platformEyebrow}</span>
-            <h2 data-reveal style={{ '--reveal-delay': '90ms' } as CSSProperties}>{copy.platformHeading}</h2>
-            <p data-reveal style={{ '--reveal-delay': '180ms' } as CSSProperties}>{copy.platformDescription}</p>
-            <Link to="/login" className="plus-landing-text-link" data-reveal style={{ '--reveal-delay': '270ms' } as CSSProperties}>
-              {copy.login}<ArrowRight size={16} aria-hidden="true" />
-            </Link>
+        <section className="plus-landing-section plus-landing-workflow" id="how-it-works">
+          <div className="plus-landing-section-heading">
+            <span className="plus-landing-eyebrow" data-reveal>{copy.workflowEyebrow}</span>
+            <h2 data-reveal style={{ '--reveal-delay': '70ms' } as CSSProperties}>{copy.workflowHeading}</h2>
+            <p data-reveal style={{ '--reveal-delay': '140ms' } as CSSProperties}>{copy.workflowDescription}</p>
           </div>
-
-          <div className="plus-landing-orbit-panel" data-reveal style={{ '--reveal-delay': '160ms' } as CSSProperties}>
-            <div className="plus-landing-orbit-heading">
-              <span className="plus-landing-orbit-brand"><BrandLogo variant="icon" /> <b>+HR</b></span>
-              <span className="plus-landing-orbit-caption">{copy.workspaceLabel}</span>
-              <span className="plus-landing-orbit-signal" aria-hidden="true"><i /></span>
-            </div>
-            <div className="plus-landing-orbit-system" aria-hidden="true">
-              <div className="plus-landing-orbit-rings"><span /><span /></div>
-              <div className="plus-landing-orbit-core"><BrandLogo variant="icon" /></div>
-              {copy.diagramNodes.map((label, index) => {
-                const Icon = diagramIcons[index];
-                return (
-                  <div className={`plus-landing-orbit-node plus-landing-orbit-node-${index + 1}`} key={label}>
-                    <span><Icon size={19} strokeWidth={1.7} /></span>
-                    <b>{label}</b>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="plus-landing-orbit-foot">
-              <span>{copy.pillars[0].title}</span>
-              <span>{copy.pillars[1].title}</span>
-              <span>{copy.pillars[2].title}</span>
-            </div>
+          <div className="plus-landing-workflow-grid">
+            {copy.workflowSteps.map((step, index) => {
+              const Icon = workflowIcons[index];
+              return (
+                <article className="plus-landing-workflow-card" key={step.title} data-reveal style={{ '--reveal-delay': `${index * 85}ms` } as CSSProperties}>
+                  <div className="plus-landing-workflow-topline"><span>0{index + 1}</span><Icon size={20} aria-hidden="true" /></div>
+                  <h3>{step.title}</h3>
+                  <p>{step.description}</p>
+                </article>
+              );
+            })}
           </div>
+        </section>
 
-          <div className="plus-landing-pillars">
-            {copy.pillars.map((pillar, index) => (
-              <article key={pillar.title} data-reveal style={{ '--reveal-delay': `${index * 80}ms` } as CSSProperties}>
-                <span>0{index + 1}</span>
-                <div><h3>{pillar.title}</h3><p>{pillar.description}</p></div>
-              </article>
-            ))}
+        <section className="plus-landing-section plus-landing-security" id="security">
+          <div className="plus-landing-security-card">
+            <div className="plus-landing-security-copy">
+              <span className="plus-landing-eyebrow" data-reveal>{copy.securityEyebrow}</span>
+              <h2 data-reveal style={{ '--reveal-delay': '70ms' } as CSSProperties}>{copy.securityHeading}</h2>
+              <p data-reveal style={{ '--reveal-delay': '140ms' } as CSSProperties}>{copy.securityDescription}</p>
+              <ul className="plus-landing-security-points" data-reveal style={{ '--reveal-delay': '210ms' } as CSSProperties}>
+                {copy.securityPoints.map((point) => (
+                  <li key={point}><Check size={15} aria-hidden="true" />{point}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="plus-landing-security-art" aria-hidden="true">
+              <div className="plus-landing-security-ring plus-landing-security-ring-outer" />
+              <div className="plus-landing-security-ring plus-landing-security-ring-inner" />
+              <div className="plus-landing-security-shield"><ShieldCheck size={46} strokeWidth={1.45} /></div>
+              <span className="plus-landing-security-chip plus-landing-security-chip-one"><LockKeyhole size={15} /></span>
+              <span className="plus-landing-security-chip plus-landing-security-chip-two"><Building2 size={15} /></span>
+              <span className="plus-landing-security-chip plus-landing-security-chip-three"><Fingerprint size={15} /></span>
+            </div>
           </div>
         </section>
 
         <section className="plus-landing-section plus-landing-cta" id="access">
           <div className="plus-landing-cta-card">
-            <div className="plus-landing-cta-glow" aria-hidden="true" />
-            <span className="plus-landing-eyebrow" data-reveal>{copy.accessEyebrow}</span>
-            <h2 data-reveal style={{ '--reveal-delay': '80ms' } as CSSProperties}>{copy.accessHeading}</h2>
-            <p data-reveal style={{ '--reveal-delay': '160ms' } as CSSProperties}>{copy.accessDescription}</p>
-            <div className="plus-landing-hero-actions" data-reveal style={{ '--reveal-delay': '240ms' } as CSSProperties}>
+            <div className="plus-landing-cta-glow plus-landing-cta-glow-coral" aria-hidden="true" />
+            <div className="plus-landing-cta-glow plus-landing-cta-glow-teal" aria-hidden="true" />
+            <span className="plus-landing-cta-mark"><BrandLogo variant="icon" /></span>
+            <h2 data-reveal>{copy.ctaHeading}</h2>
+            <p data-reveal style={{ '--reveal-delay': '80ms' } as CSSProperties}>{copy.ctaDescription}</p>
+            <div className="plus-landing-cta-actions" data-reveal style={{ '--reveal-delay': '160ms' } as CSSProperties}>
               <Link to="/login" className="plus-landing-button plus-landing-button-primary">
-                {copy.login}<ArrowRight size={17} aria-hidden="true" />
+                {copy.workspace}<ArrowRight size={17} aria-hidden="true" />
               </Link>
-              <a href="#top" className="plus-landing-button plus-landing-button-secondary">{copy.discover}</a>
+              <a href="#features" className="plus-landing-button plus-landing-button-secondary">
+                {copy.discover}<ArrowRight size={16} aria-hidden="true" />
+              </a>
             </div>
           </div>
-
-          <footer className="plus-landing-footer">
-            <Link to="/" className="plus-landing-brand" aria-label={copy.homeLabel}>
-              <BrandLogo variant="icon" />
-              <span>+HR</span>
-            </Link>
-            <p>{copy.copyright}</p>
-            <Link to="/login">{copy.login}</Link>
-            <span className="plus-landing-copyright">© {new Date().getFullYear()} +HR</span>
-          </footer>
         </section>
       </main>
+
+      <footer className="plus-landing-footer">
+        <a href="#top" className="plus-landing-brand" aria-label={copy.homeLabel}>
+          <BrandLogo variant="icon" />
+          <span>+HR</span>
+        </a>
+        <p>{copy.copyright}</p>
+      </footer>
     </div>
   );
 }
