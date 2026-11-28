@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Eye, EyeOff, KeyRound, LifeBuoy, Lock, Mail, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, LifeBuoy, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { BrandLogo } from '../components/ui/BrandLogo';
-import { Modal } from '../components/ui/ConfirmModal';
+import { OtpRecoveryModal, type OtpRecoveryCopy, type OtpRecoveryStep } from '../components/ui/OtpRecoveryModal';
 import { useApp } from '../contexts/AppContext';
 import { apiRequest } from '../services/api';
-import type { AuthUser } from '../types';
+import type { AppLang, AuthUser } from '../types';
 
 const loginCopy = {
   fr: {
@@ -94,6 +94,116 @@ const loginCopy = {
   },
 };
 
+const otpCopy: Record<AppLang, OtpRecoveryCopy> = {
+  fr: {
+    emailTitle: 'Réinitialiser votre mot de passe',
+    verifyTitle: 'Vérifiez votre adresse e-mail',
+    resetTitle: 'Choisissez un nouveau mot de passe',
+    successTitle: 'Mot de passe mis à jour',
+    emailDescription: 'Saisissez votre adresse e-mail professionnelle. Si un compte actif y est associé, un code valable 5 minutes vous sera envoyé.',
+    emailLabel: 'Adresse e-mail professionnelle',
+    emailPlaceholder: 'nom@entreprise.ma',
+    sendCode: 'Envoyer le code',
+    sending: 'Envoi du code…',
+    verifyDescription: 'Saisissez le code à 6 chiffres envoyé à cette adresse.',
+    codeLabel: 'Code de vérification',
+    verifyCode: 'Vérifier le code',
+    verifying: 'Vérification…',
+    changeEmail: 'Modifier l’adresse e-mail',
+    passwordLabel: 'Nouveau mot de passe',
+    passwordPlaceholder: 'Saisissez votre nouveau mot de passe',
+    confirmPasswordLabel: 'Confirmer le mot de passe',
+    resetPassword: 'Réinitialiser le mot de passe',
+    resetting: 'Réinitialisation…',
+    passwordRules: '8 caractères minimum, une majuscule, une minuscule et un chiffre (72 octets maximum).',
+    successDescription: 'Votre mot de passe a été réinitialisé. Vous pouvez maintenant vous connecter à votre espace +HR.',
+    returnToLogin: 'Retour à la connexion',
+    close: 'Fermer la fenêtre de récupération',
+    invalidEmail: 'Saisissez une adresse e-mail professionnelle valide.',
+    invalidCode: 'Saisissez le code de vérification à 6 chiffres.',
+    weakPassword: 'Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre, avec un maximum de 72 octets.',
+    passwordMismatch: 'Les mots de passe ne correspondent pas.',
+    invalidRecovery: 'Le code ou la demande de réinitialisation est invalide ou expiré.',
+    genericError: 'La récupération est temporairement indisponible. Réessayez plus tard.',
+    emailNotice: 'Si un compte actif est associé à cette adresse, vous recevrez un code de réinitialisation par e-mail.',
+  },
+  en: {
+    emailTitle: 'Reset your password',
+    verifyTitle: 'Verify your email address',
+    resetTitle: 'Choose a new password',
+    successTitle: 'Password updated',
+    emailDescription: 'Enter your work email. If it is associated with an active account, a code valid for 5 minutes will be sent.',
+    emailLabel: 'Work email address',
+    emailPlaceholder: 'name@company.com',
+    sendCode: 'Send code',
+    sending: 'Sending code…',
+    verifyDescription: 'Enter the 6-digit code sent to this address.',
+    codeLabel: 'Verification code',
+    verifyCode: 'Verify code',
+    verifying: 'Verifying…',
+    changeEmail: 'Change email address',
+    passwordLabel: 'New password',
+    passwordPlaceholder: 'Enter your new password',
+    confirmPasswordLabel: 'Confirm password',
+    resetPassword: 'Reset password',
+    resetting: 'Resetting…',
+    passwordRules: 'At least 8 characters, one uppercase letter, one lowercase letter, and one number (maximum 72 bytes).',
+    successDescription: 'Your password has been reset. You can now sign in to your +HR workspace.',
+    returnToLogin: 'Return to sign in',
+    close: 'Close password recovery',
+    invalidEmail: 'Enter a valid work email address.',
+    invalidCode: 'Enter the 6-digit verification code.',
+    weakPassword: 'Use at least 8 characters, one uppercase letter, one lowercase letter, and one number (maximum 72 bytes).',
+    passwordMismatch: 'The passwords do not match.',
+    invalidRecovery: 'The code or password reset request is invalid or has expired.',
+    genericError: 'Password recovery is temporarily unavailable. Please try again later.',
+    emailNotice: 'If an active account is associated with this address, you will receive a reset code by email.',
+  },
+  ar: {
+    emailTitle: 'إعادة تعيين كلمة المرور',
+    verifyTitle: 'تحقق من عنوان بريدك الإلكتروني',
+    resetTitle: 'اختر كلمة مرور جديدة',
+    successTitle: 'تم تحديث كلمة المرور',
+    emailDescription: 'أدخل بريدك الإلكتروني المهني. إذا كان مرتبطًا بحساب نشط، فسيُرسل رمز صالح لمدة 5 دقائق.',
+    emailLabel: 'عنوان البريد الإلكتروني المهني',
+    emailPlaceholder: 'name@company.com',
+    sendCode: 'إرسال الرمز',
+    sending: 'جارٍ إرسال الرمز…',
+    verifyDescription: 'أدخل الرمز المكوّن من 6 أرقام الذي أُرسل إلى هذا العنوان.',
+    codeLabel: 'رمز التحقق',
+    verifyCode: 'تحقق من الرمز',
+    verifying: 'جارٍ التحقق…',
+    changeEmail: 'تغيير عنوان البريد الإلكتروني',
+    passwordLabel: 'كلمة المرور الجديدة',
+    passwordPlaceholder: 'أدخل كلمة المرور الجديدة',
+    confirmPasswordLabel: 'تأكيد كلمة المرور',
+    resetPassword: 'إعادة تعيين كلمة المرور',
+    resetting: 'جارٍ إعادة التعيين…',
+    passwordRules: '8 أحرف على الأقل، وحرف كبير وحرف صغير ورقم واحد (بحد أقصى 72 بايت).',
+    successDescription: 'تمت إعادة تعيين كلمة المرور. يمكنك الآن تسجيل الدخول إلى مساحة +HR.',
+    returnToLogin: 'العودة إلى تسجيل الدخول',
+    close: 'إغلاق نافذة استعادة كلمة المرور',
+    invalidEmail: 'أدخل عنوان بريد إلكتروني مهني صالحًا.',
+    invalidCode: 'أدخل رمز التحقق المكوّن من 6 أرقام.',
+    weakPassword: 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل، وحرف كبير وحرف صغير ورقم واحد (بحد أقصى 72 بايت).',
+    passwordMismatch: 'كلمتا المرور غير متطابقتين.',
+    invalidRecovery: 'الرمز أو طلب إعادة التعيين غير صالح أو انتهت صلاحيته.',
+    genericError: 'استعادة كلمة المرور غير متاحة مؤقتًا. حاول مرة أخرى لاحقًا.',
+    emailNotice: 'إذا كان هذا العنوان مرتبطًا بحساب نشط، فستتلقى رمز إعادة التعيين عبر البريد الإلكتروني.',
+  },
+};
+
+function getOtpError(error: unknown, copy: OtpRecoveryCopy): string {
+  const message = error instanceof Error ? error.message : '';
+  if (/Code ou demande de réinitialisation invalide|invalid or has expired/i.test(message)) {
+    return copy.invalidRecovery;
+  }
+  if (/Le nouveau mot de passe doit contenir|password must contain/i.test(message)) {
+    return copy.weakPassword;
+  }
+  return copy.genericError;
+}
+
 const teamIllustration = new URL('../assets/images/login-team-illustration.jpg', import.meta.url).href;
 const focusClass = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-300';
 const labelClass = 'mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-200';
@@ -111,6 +221,7 @@ interface DemoAccount {
 export const LoginPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
   const { setSession, addToast, lang } = useApp();
   const copy = loginCopy[lang];
+  const recovery = otpCopy[lang];
   const navigate = useNavigate();
   const activeLabelClass = embedded ? 'plus-warm-auth-label' : labelClass;
   const activeFieldIconClass = embedded ? 'plus-warm-auth-field-icon' : fieldIconClass;
@@ -127,7 +238,7 @@ export const LoginPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }
 
   // OTP Modal state
   const [otpModalOpen, setOtpModalOpen] = useState(false);
-  const [otpStep, setOtpStep] = useState<'email' | 'verify' | 'reset'>('email');
+  const [otpStep, setOtpStep] = useState<OtpRecoveryStep>('email');
   const [otpEmail, setOtpEmail] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [resetToken, setResetToken] = useState('');
@@ -173,16 +284,22 @@ export const LoginPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }
     e.preventDefault();
     setOtpError('');
     setOtpNotice('');
+    const email = otpEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setOtpError(recovery.invalidEmail);
+      return;
+    }
     setOtpBusy(true);
     try {
-      const res = await apiRequest<{ message: string }>('/api/auth/otp/request', {
+      await apiRequest<{ message: string }>('/api/auth/otp/request', {
         method: 'POST',
-        body: JSON.stringify({ email: otpEmail }),
+        body: JSON.stringify({ email }),
       });
-      setOtpNotice(res.message);
+      setOtpEmail(email);
+      setOtpNotice(recovery.emailNotice);
       setOtpStep('verify');
     } catch (err) {
-      setOtpError((err as Error).message);
+      setOtpError(getOtpError(err, recovery));
     } finally {
       setOtpBusy(false);
     }
@@ -191,6 +308,10 @@ export const LoginPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setOtpError('');
+    if (!/^\d{6}$/.test(otpCode)) {
+      setOtpError(recovery.invalidCode);
+      return;
+    }
     setOtpBusy(true);
     try {
       const response = await apiRequest<{ resetToken: string }>('/api/auth/otp/verify-reset', {
@@ -201,7 +322,7 @@ export const LoginPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }
       setOtpCode('');
       setOtpStep('reset');
     } catch (err) {
-      setOtpError((err as Error).message);
+      setOtpError(getOtpError(err, recovery));
     } finally {
       setOtpBusy(false);
     }
@@ -210,8 +331,14 @@ export const LoginPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setOtpError('');
+    if (newPassword.length < 8 || !/[A-Z]/.test(newPassword) ||
+        !/[a-z]/.test(newPassword) || !/\d/.test(newPassword) ||
+        new TextEncoder().encode(newPassword).length > 72) {
+      setOtpError(recovery.weakPassword);
+      return;
+    }
     if (newPassword !== confirmPassword) {
-      setOtpError('Les mots de passe ne correspondent pas.');
+      setOtpError(recovery.passwordMismatch);
       return;
     }
     setOtpBusy(true);
@@ -220,15 +347,15 @@ export const LoginPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }
         method: 'POST',
         body: JSON.stringify({ email: otpEmail, resetToken, newPassword }),
       });
-      addToast('Mot de passe réinitialisé. Connectez-vous maintenant.', 'success');
-      setOtpModalOpen(false);
-      setOtpStep('email');
+      setOtpStep('success');
+      setOtpNotice('');
+      setOtpError('');
       setResetToken('');
       setOtpCode('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err) {
-      setOtpError((err as Error).message);
+      setOtpError(getOtpError(err, recovery));
     } finally {
       setOtpBusy(false);
     }
@@ -243,6 +370,24 @@ export const LoginPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }
     setConfirmPassword('');
     setOtpModalOpen(true);
     setOtpStep('email');
+    setOtpError('');
+  };
+
+  const closeRecovery = () => {
+    setOtpModalOpen(false);
+    setOtpStep('email');
+    setOtpCode('');
+    setResetToken('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setOtpNotice('');
+    setOtpError('');
+  };
+
+  const backToRecoveryEmail = () => {
+    setOtpStep('email');
+    setOtpCode('');
+    setOtpNotice('');
     setOtpError('');
   };
 
@@ -448,108 +593,40 @@ export const LoginPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }
         </div>
       </RootElement>
 
-      {/* OTP Password Recovery Modal */}
-      <Modal open={otpModalOpen} title="Récupération par code OTP" onClose={() => {
-        setOtpModalOpen(false);
-        setResetToken('');
-        setOtpCode('');
-      }}>
-        {otpError && (
-          <div className="mb-3 p-2.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-xs text-red-700 dark:text-red-300">
-            {otpError}
-          </div>
-        )}
-        {otpNotice && (
-          <div className="mb-3 p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 text-xs text-blue-700 dark:text-blue-300">
-            {otpNotice}
-          </div>
-        )}
-
-        {otpStep === 'email' && (
-          <form onSubmit={handleRequestOtp} className="space-y-4">
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Saisissez votre adresse e-mail professionnelle. Le code envoyé par e-mail est valable 5 minutes.
-            </p>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Email professionnel</label>
-              <input
-                type="email"
-                required
-                value={otpEmail}
-                onChange={(e) => setOtpEmail(e.target.value)}
-                placeholder="nom@entreprise.ma"
-                className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={otpBusy}
-              className="w-full py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              {otpBusy ? 'Envoi…' : 'Envoyer le code OTP'}
-            </button>
-          </form>
-        )}
-
-        {otpStep === 'verify' && (
-          <form onSubmit={handleVerifyOtp} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Code à 6 chiffres</label>
-              <input
-                type="text"
-                required
-                maxLength={6}
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                className="w-full px-3 py-2 text-center font-mono text-lg tracking-widest border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={otpBusy}
-              className="w-full py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              Vérifier le code
-            </button>
-          </form>
-        )}
-
-        {otpStep === 'reset' && (
-          <form onSubmit={handleResetPassword} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nouveau mot de passe</label>
-              <input
-                type="password"
-                required
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Min. 8 caractères, 1 majuscule, 1 chiffre"
-                className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Confirmer le mot de passe</label>
-              <input
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={otpBusy}
-              className="w-full py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              <KeyRound className="w-4 h-4" />
-              <span>Réinitialiser le mot de passe</span>
-            </button>
-          </form>
-        )}
-      </Modal>
+      <OtpRecoveryModal
+        open={otpModalOpen}
+        lang={lang}
+        step={otpStep}
+        email={otpEmail}
+        code={otpCode}
+        password={newPassword}
+        confirmPassword={confirmPassword}
+        busy={otpBusy}
+        error={otpError}
+        notice={otpNotice}
+        copy={recovery}
+        onEmailChange={(value) => {
+          setOtpEmail(value);
+          setOtpError('');
+        }}
+        onCodeChange={(value) => {
+          setOtpCode(value);
+          setOtpError('');
+        }}
+        onPasswordChange={(value) => {
+          setNewPassword(value);
+          setOtpError('');
+        }}
+        onConfirmPasswordChange={(value) => {
+          setConfirmPassword(value);
+          setOtpError('');
+        }}
+        onSubmitEmail={handleRequestOtp}
+        onSubmitCode={handleVerifyOtp}
+        onSubmitPassword={handleResetPassword}
+        onBackToEmail={backToRecoveryEmail}
+        onClose={closeRecovery}
+      />
     </>
   );
 };
