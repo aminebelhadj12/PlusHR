@@ -339,7 +339,9 @@ export async function requestPasswordOtp(req: Request, res: Response): Promise<v
         SELECT 1 FROM companies c WHERE c.id = u.company_id AND c.status <> 'suspended'
       ))
   `).get(issued.userId, issued.companyId, issued.id, new Date().toISOString()) as { email: string; preferred_lang: string } | undefined;
-  const delivered = recipient ? await sendPasswordResetEmail(config, recipient.email, recipient.preferred_lang, issued.code) : false;
+  const delivered = recipient ? await sendPasswordResetEmail(
+    config, recipient.email, recipient.preferred_lang, issued.code, otpValidity,
+  ) : false;
   await mutateAuthDb((db) => {
     const record = db.password_reset_otps.find((otp) => otp.id === issued.id && !otp.used_at);
     if (!record) return;

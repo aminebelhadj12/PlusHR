@@ -13,6 +13,56 @@ const english = 'admin@atlas-industrial.ma';
 const arabic = 'admin@maghrebtech.ma';
 const unknown = 'unknown@example.test';
 
+function assertOtpEmail(mail: (typeof brevo.messages)[number], language: 'fr' | 'en' | 'ar',
+  code: string, validityMs: number): void {
+  const expectedContent = {
+    fr: [
+      'Gestion intelligente des ressources humaines',
+      'Réinitialisation de votre mot de passe',
+      'Un rappel de sécurité',
+      'L’équipe +HR',
+      '© 2026 +HR. Tous droits réservés.',
+      'envoyé automatiquement',
+    ],
+    en: [
+      'Intelligent Human Resources Management',
+      'Reset your password',
+      'A security reminder',
+      'The +HR Team',
+      '© 2026 +HR. All rights reserved.',
+      'sent automatically',
+    ],
+    ar: [
+      'إدارة ذكية للموارد البشرية',
+      'إعادة تعيين كلمة المرور',
+      'تذكير أمني',
+      'فريق +HR',
+      '© 2026 +HR. جميع الحقوق محفوظة.',
+      'تلقائيًا',
+    ],
+  }[language];
+  const direction = language === 'ar' ? 'rtl' : 'ltr';
+  const expectedDuration = new Intl.NumberFormat(language, {
+    style: 'unit',
+    unit: 'minute',
+    unitDisplay: 'long',
+  }).format(Math.ceil(validityMs / 60_000));
+  const otpCells = Array.from(mail.htmlContent.matchAll(/<td class="otp-digit"[^>]*>(\d)<\/td>/g),
+    (match) => match[1]);
+  const renderedCode = otpCells.join('');
+
+  assert.ok(mail.htmlContent.includes(`lang="${language}" dir="${direction}"`), 'Email language and direction should be localized.');
+  assert.ok(mail.htmlContent.includes('max-width:600px'), 'Email layout should be fluid and capped at 600px.');
+  assert.ok(mail.htmlContent.includes('#FDF9F3') && mail.htmlContent.includes('#FF7A59') &&
+    mail.htmlContent.includes('#C8431F') && mail.htmlContent.includes('#2BB6A3'), 'Email should use +HR brand colors.');
+  assert.ok(expectedContent.every((text) => mail.htmlContent.includes(text)),
+    'HTML email should contain the localized subtitle, heading, security note, signature and footer.');
+  assert.ok(otpCells.length === 6 && renderedCode === code, 'HTML email should display the generated OTP in six separate boxes.');
+  assert.ok(mail.textContent.split(/\r?\n/).includes(code), 'Plain-text alternative should contain the generated OTP on its own line.');
+  assert.ok(mail.htmlContent.includes(expectedDuration) && mail.textContent.includes(expectedDuration),
+    'HTML and plain-text emails should show the existing dynamic OTP validity.');
+}
+
 async function run() {
   resetDemoDatabase();
   const db = getSqliteDb();
@@ -72,12 +122,13 @@ async function run() {
     const firstCode = await brevo.waitForCode(french, 0);
     assert.equal(brevo.messages.length, 1);
     assert.equal(count(), 1);
-    assert.match(brevo.messages[0].htmlContent, /lang="fr" dir="ltr"/);
     assert.ok(!JSON.stringify(generic.data).includes(firstCode));
     const first = db.prepare('SELECT id, otp_hash, expires_at, created_at FROM password_reset_otps WHERE email = ?').get(french) as
       { id: string; otp_hash: string; expires_at: string; created_at: string };
     assert.match(first.otp_hash, /^otp-v1:[a-f0-9]{64}$/);
-    assert.equal(Date.parse(first.expires_at) - Date.parse(first.created_at), 300_000);
+    const frenchValidity = Date.parse(first.expires_at) - Date.parse(first.created_at);
+    assert.equal(frenchValidity, 300_000);
+    assertOtpEmail(brevo.messages[0], 'fr', firstCode, frenchValidity);
     assert.deepEqual(await request(french), generic);
     await settle();
     assert.equal(count(), 1);
@@ -105,6 +156,10 @@ async function run() {
     ip = '192.0.2.11';
     await request(english);
     const enCode = await brevo.waitForCode(english, 3);
+    const englishOtp = db.prepare('SELECT expires_at, created_at FROM password_reset_otps WHERE email = ?').get(english) as
+      { expires_at: string; created_at: string };
+    assertOtpEmail(brevo.messages[3], 'en', enCode,
+      Date.parse(englishOtp.expires_at) - Date.parse(englishOtp.created_at));
     assert.match(brevo.messages[3].subject, /Password reset code/);
     const invalid = await verify(unknown, { code: enCode, verifyOnly: true });
     assert.equal(invalid.status, 400);
@@ -126,7 +181,10 @@ async function run() {
     setCompany.run('active', 'comp-maghreb');
     await request(arabic);
     const arCode = await brevo.waitForCode(arabic, 4);
-    assert.match(brevo.messages[4].htmlContent, /lang="ar" dir="rtl"/);
+    const arabicOtp = db.prepare('SELECT expires_at, created_at FROM password_reset_otps WHERE email = ?').get(arabic) as
+      { expires_at: string; created_at: string };
+    assertOtpEmail(brevo.messages[4], 'ar', arCode,
+      Date.parse(arabicOtp.expires_at) - Date.parse(arabicOtp.created_at));
     assert.match(brevo.messages[4].subject, /\p{Script=Arabic}/u);
 
     const exchanged = await Promise.all([
