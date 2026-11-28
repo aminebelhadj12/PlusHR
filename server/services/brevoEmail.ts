@@ -83,10 +83,6 @@ function renderHtml(language: EmailLanguage, code: string, validityMs: number): 
   const alignment = direction === 'rtl' ? 'right' : 'left';
   const duration = formatDuration(language, validityMs);
   const safeCode = escapeHtml(code);
-  const cells = Array.from(safeCode, (digit) => `
-    <td class="otp-digit" width="35" height="52" align="center" valign="middle"
-      style="width:35px;height:52px;padding:0 2px;border:1px solid #EFE6D8;border-radius:10px;background:#FDF9F3;color:#C8431F;font-family:Poppins,Arial,sans-serif;font-size:25px;font-weight:700;line-height:1">${digit}</td>
-  `).join('');
 
   return `<!doctype html>
 <html lang="${language}" dir="${direction}">
@@ -110,6 +106,20 @@ function renderHtml(language: EmailLanguage, code: string, validityMs: number): 
               </td>
             </tr>
             <tr>
+              <td align="center" style="padding:14px 28px 0">
+                <p style="margin:0 0 13px;color:#736C63;font-family:Poppins,Arial,sans-serif;font-size:13px;font-weight:600;line-height:1.5">${copy.codeLabel}</p>
+                <table role="presentation" dir="ltr" align="center" border="0" cellpadding="0" cellspacing="0"
+                  style="direction:ltr;margin:0 auto;border:1px solid #F4D6CA;border-radius:16px;background:#FDF9F3">
+                  <tr>
+                    <td align="center" style="padding:17px 22px">
+                      <strong dir="ltr" style="display:inline-block;color:#C8431F;font-family:Poppins,Arial,sans-serif;font-size:32px;font-weight:700;letter-spacing:0.24em;line-height:1.35;white-space:nowrap;user-select:all;-webkit-user-select:all">${safeCode}</strong>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:14px 0 0;color:#736C63;font-family:Poppins,Arial,sans-serif;font-size:13px;line-height:1.7">${copy.expiry(duration)}</p>
+              </td>
+            </tr>
+            <tr>
               <td align="${alignment}" style="padding:8px 28px 0;text-align:${alignment}">
                 <table role="presentation" border="0" cellpadding="0" cellspacing="0">
                   <tr>
@@ -123,16 +133,6 @@ function renderHtml(language: EmailLanguage, code: string, validityMs: number): 
               <td align="${alignment}" style="padding:19px 28px 0;text-align:${alignment}">
                 <h1 style="margin:0;color:#23201D;font-family:Poppins,Arial,sans-serif;font-size:24px;font-weight:700;line-height:1.35">${copy.heading}</h1>
                 <p style="margin:12px 0 0;color:#736C63;font-family:Poppins,Arial,sans-serif;font-size:15px;line-height:1.75">${copy.introduction}</p>
-              </td>
-            </tr>
-            <tr>
-              <td align="center" style="padding:24px 18px 0">
-                <p style="margin:0 0 13px;color:#736C63;font-family:Poppins,Arial,sans-serif;font-size:13px;font-weight:600;line-height:1.5">${copy.codeLabel}</p>
-                <table role="img" aria-label="${copy.codeLabel}: ${safeCode}" dir="ltr" align="center" border="0" cellpadding="0" cellspacing="5"
-                  style="direction:ltr;margin:0 auto">
-                  <tr>${cells}</tr>
-                </table>
-                <p style="margin:18px 0 0;color:#736C63;font-family:Poppins,Arial,sans-serif;font-size:13px;line-height:1.7">${copy.expiry(duration)}</p>
               </td>
             </tr>
             <tr>
@@ -175,9 +175,9 @@ function renderText(language: EmailLanguage, code: string, validityMs: number): 
   return [
     '+HR',
     copy.subtitle,
+    `${copy.codeLabel}:\n${code}`,
     copy.heading,
     copy.introduction,
-    `${copy.codeLabel}:\n${code}`,
     copy.expiry(formatDuration(language, validityMs)),
     `${copy.securityTitle}: ${copy.securityNotice}`,
     copy.signature,
