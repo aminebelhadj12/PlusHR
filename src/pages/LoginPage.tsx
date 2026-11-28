@@ -485,6 +485,7 @@ export const LoginPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }
                   <button
                     type="button"
                     onClick={openRecovery}
+                    aria-haspopup="dialog"
                     className={embedded
                       ? 'plus-warm-auth-forgot plus-warm-auth-focus'
                       : `${focusClass} min-h-11 rounded text-start font-semibold text-blue-700 hover:underline dark:text-blue-300`}
