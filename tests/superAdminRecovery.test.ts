@@ -29,6 +29,7 @@ async function start() {
         method: body === undefined ? 'GET' : 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Origin: `http://127.0.0.1:${port}`,
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
           ...(cookie ? { Cookie: cookie } : {}),
         },

@@ -42,6 +42,7 @@ async function run() {
       method: body === undefined ? 'GET' : 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Origin: base,
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(cookie ? { Cookie: cookie } : {}),
       },

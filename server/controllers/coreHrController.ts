@@ -699,12 +699,64 @@ export async function uploadEmployeeDocument(req: AuthenticatedRequest, res: Res
 }
 
 export function serveSafeUpload(req: AuthenticatedRequest, res: Response): void {
+  const filePath = `/api/uploads/${req.params.filename}`;
+  if (!canAccessUpload(req.user, filePath)) {
+    res.status(404).json({ error: 'Fichier introuvable.' });
+    return;
+  }
+
   try {
     const resolved = safeUploadPath(req.params.filename);
     res.sendFile(resolved);
   } catch {
     res.status(400).json({ error: 'Chemin de fichier invalide.' });
   }
+}
+
+export function canAccessUpload(user: AuthenticatedRequest['user'], filePath: string): boolean {
+  if (!user) return false;
+  const db = loadDb();
+  const hasCompanyAccess = (companyId: string) =>
+    user.roleCode === 'SUPER_ADMIN' || user.companyId === companyId;
+  const employeeRecordAccessible = (employeeId: string, companyId: string): boolean => {
+    if (!hasCompanyAccess(companyId)) return false;
+    const employee = db.employees.find((entry) => entry.id === employeeId && entry.company_id === companyId);
+    if (!employee) return false;
+    if (user.roleCode === 'SUPER_ADMIN' || user.roleCode === 'COMPANY_ADMIN' || user.roleCode === 'HR_MANAGER') return true;
+    if (user.roleCode === 'EMPLOYEE') return employee.user_id === user.userId;
+    if (user.roleCode !== 'MANAGER') return false;
+    const manager = db.employees.find((entry) => entry.user_id === user.userId && entry.company_id === companyId);
+    return Boolean(manager && manager.department_id === employee.department_id);
+  };
+
+  if (db.employee_documents.some((document) =>
+    document.file_path === filePath && employeeRecordAccessible(document.employee_id, document.company_id)
+  )) return true;
+
+  if (db.message_attachments.some((attachment) => {
+    if (attachment.file_path !== filePath || !hasCompanyAccess(attachment.company_id)) return false;
+    const message = db.messages.find((entry) =>
+      entry.id === attachment.message_id && entry.company_id === attachment.company_id
+    );
+    return Boolean(message && db.conversation_members.some((member) =>
+      member.conversation_id === message.conversation_id &&
+      member.company_id === attachment.company_id &&
+      member.user_id === user.userId
+    ));
+  })) return true;
+
+  return db.announcements.some((announcement) => {
+    if (announcement.attachment_path !== filePath || !hasCompanyAccess(announcement.company_id)) return false;
+    if (announcement.expires_at && announcement.expires_at < new Date().toISOString().slice(0, 10)) return false;
+    if (announcement.audience_type === 'all') return true;
+    const employee = db.employees.find((entry) =>
+      entry.user_id === user.userId && entry.company_id === announcement.company_id
+    );
+    if (announcement.audience_type === 'department') {
+      return employee?.department_id === announcement.target_department_id;
+    }
+    return announcement.audience_type === 'role' && user.roleCode === announcement.target_role_code;
+  });
 }
 
 export function listRegistrationRequests(req: AuthenticatedRequest, res: Response): void {

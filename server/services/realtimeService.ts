@@ -1,6 +1,7 @@
 import { Server as HttpServer } from 'http';
 import { Server as SocketServer, Socket } from 'socket.io';
 import { verifyAccessToken, JwtPayload } from '../middlewares/auth.js';
+import { isTrustedBrowserOrigin } from '../middlewares/csrfProtection.js';
 import { loadDb, mutateDb, newId } from '../repositories/dataStore.js';
 import { isInMaintenance } from './maintenance.js';
 import type { NotificationItem } from '../../src/types/index.js';
@@ -20,6 +21,14 @@ export function initRealtimeServer(httpServer: HttpServer): SocketServer {
   io.use((socket, next) => {
     if (isInMaintenance()) return next(new Error('Maintenance'));
     try {
+      const origin = socket.handshake.headers.origin;
+      const forwardedProtocol = socket.handshake.headers['x-forwarded-proto'];
+      const protocol = (Array.isArray(forwardedProtocol) ? forwardedProtocol[0] : forwardedProtocol)?.split(',')[0] ||
+        (Reflect.get(socket.request.socket, 'encrypted') === true ? 'https' : 'http');
+      const host = socket.handshake.headers.host;
+      if (origin && (!host || !isTrustedBrowserOrigin(origin, `${protocol}://${host}`))) {
+        return next(new Error('Origin not allowed'));
+      }
       const token =
         (socket.handshake.auth?.token as string | undefined) ||
         (socket.handshake.headers.authorization?.startsWith('Bearer ')
@@ -29,7 +38,9 @@ export function initRealtimeServer(httpServer: HttpServer): SocketServer {
         return next(new Error('Unauthorized'));
       }
       const decoded = verifyAccessToken(token);
-      (socket as Socket & { user?: JwtPayload }).user = decoded;
+      const authenticatedSocket = socket as Socket & { user?: JwtPayload; accessToken?: string };
+      authenticatedSocket.user = decoded;
+      authenticatedSocket.accessToken = token;
       next();
     } catch {
       next(new Error('Unauthorized'));
@@ -37,9 +48,9 @@ export function initRealtimeServer(httpServer: HttpServer): SocketServer {
   });
 
   io.on('connection', (rawSocket) => {
-    const socket = rawSocket as Socket & { user?: JwtPayload };
+    const socket = rawSocket as Socket & { user?: JwtPayload; accessToken?: string };
     const user = socket.user;
-    if (!user || isInMaintenance()) {
+    if (!user || !socket.accessToken || isInMaintenance()) {
       socket.disconnect();
       return;
     }
@@ -47,11 +58,29 @@ export function initRealtimeServer(httpServer: HttpServer): SocketServer {
     const expiresIn = (user.exp ?? 0) * 1000 - Date.now();
     const expiryTimer = setTimeout(() => socket.disconnect(true), Math.max(0, expiresIn));
     expiryTimer.unref();
+    const sessionTimer = setInterval(() => {
+      try {
+        verifyAccessToken(socket.accessToken!);
+      } catch {
+        socket.disconnect(true);
+      }
+    }, 30_000);
+    sessionTimer.unref();
 
     socket.join(`user:${user.userId}`);
     if (user.companyId) {
       socket.join(`company:${user.companyId}`);
     }
+    socket.join(`session:${user.sessionId}`);
+    socket.use((_packet, next) => {
+      try {
+        verifyAccessToken(socket.accessToken!);
+        next();
+      } catch {
+        socket.disconnect(true);
+        next(new Error('Unauthorized'));
+      }
+    });
 
     const existing = onlineUsers.get(user.userId) || {
       userId: user.userId,
@@ -87,6 +116,7 @@ export function initRealtimeServer(httpServer: HttpServer): SocketServer {
 
     socket.on('disconnect', () => {
       clearTimeout(expiryTimer);
+      clearInterval(sessionTimer);
       const entry = onlineUsers.get(user.userId);
       if (entry) {
         entry.sockets.delete(socket.id);

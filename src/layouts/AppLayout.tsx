@@ -115,7 +115,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
 
   const handleLogout = async () => {
     await logout();
-    navigate('/', { replace: true });
+    navigate('/login');
   };
 
   return (

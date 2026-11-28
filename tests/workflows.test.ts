@@ -13,7 +13,7 @@ async function request(
   path: string,
   options: { method?: string; token?: string; body?: unknown; cookie?: string } = {}
 ): Promise<{ status: number; data: any; setCookies: string[] }> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', Origin: baseUrl };
   if (options.token) headers.Authorization = `Bearer ${options.token}`;
   if (options.cookie) headers.Cookie = options.cookie;
 
@@ -198,6 +198,7 @@ async function runTests() {
 
     // 5. Employee CRUD: 6-step onboarding + modify + status + delete
     const deptsRes = await request(baseUrl, '/api/departments', { token: adminToken });
+    assert.equal(deptsRes.status, 200, JSON.stringify(deptsRes.data));
     const firstDept = deptsRes.data.departments[0];
     const firstPos = deptsRes.data.positions.find((p: any) => p.department_id === firstDept.id);
 

@@ -12,6 +12,7 @@ import { trackApiRequests } from './server/services/maintenance.js';
 import { startBackupScheduler } from './server/services/sqliteBackup.js';
 import { initRealtimeServer } from './server/services/realtimeService.js';
 import { apiRouter } from './server/routes/api.js';
+import { protectCookieAuthenticatedRequests } from './server/middlewares/csrfProtection.js';
 
 export async function createAppServer(options: { skipVite?: boolean; scheduleBackups?: boolean } = {}) {
   const recoveryEnabled = checkRecoveryConfiguration();
@@ -33,6 +34,7 @@ export async function createAppServer(options: { skipVite?: boolean; scheduleBac
   app.use(express.json({ limit: '4mb' }));
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
+  app.use('/api', protectCookieAuthenticatedRequests);
 
   // Basic security headers compatible with iframe preview
   app.use((_req, res, next) => {

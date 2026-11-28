@@ -18,6 +18,7 @@ export function getRefreshSecret(): string {
 
 export interface JwtPayload {
   userId: string;
+  sessionId: string;
   companyId: string | null;
   roleCode: RoleCode;
   email: string;
@@ -48,6 +49,9 @@ export function signRefreshToken(payload: JwtPayload): string {
 
 export function verifyAccessToken(token: string): JwtPayload {
   const decoded = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'], audience: 'plushr-access' }) as JwtPayload;
+  if (typeof decoded.sessionId !== 'string' || !decoded.sessionId) {
+    throw new Error('Access token is not bound to a session');
+  }
   const user = getSqliteDb().prepare(`
     SELECT id, company_id, role_code, password_hash
     FROM users
@@ -60,6 +64,11 @@ export function verifyAccessToken(token: string): JwtPayload {
   if (!user || !matchesSession(decoded, user)) {
     throw new Error('Invalid session');
   }
+  const activeSession = getSqliteDb().prepare(`
+    SELECT id FROM refresh_tokens
+    WHERE id = ? AND user_id = ? AND revoked_at IS NULL AND expires_at > ?
+  `).get(decoded.sessionId, decoded.userId, new Date().toISOString());
+  if (!activeSession) throw new Error('Session revoked or expired');
   return decoded;
 }
 
@@ -72,6 +81,7 @@ export function canAuthenticate(db: DbSchema, user: DbUser): boolean {
 export function createSessionPayload(user: DbUser, rememberMe: boolean): JwtPayload {
   return {
     userId: user.id,
+    sessionId: crypto.randomUUID(),
     companyId: user.company_id,
     roleCode: user.role_code,
     email: user.email,

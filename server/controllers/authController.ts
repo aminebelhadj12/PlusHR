@@ -13,6 +13,7 @@ import {
   setAuthCookies,
   signAccessToken,
   signRefreshToken,
+  verifyAccessToken,
   JwtPayload,
 } from '../middlewares/auth.js';
 import jwt from 'jsonwebtoken';
@@ -26,10 +27,10 @@ import { getRealtimeIo } from '../services/realtimeService.js';
 
 function issueSession(db: DbSchema, user: DbUser, rememberMe: boolean, firstLogin = user.must_change_password) {
   const payload = { ...createSessionPayload(user, rememberMe), firstLogin };
-  const accessToken = signAccessToken(payload, rememberMe);
   const refreshToken = signRefreshToken(payload);
+  const accessToken = signAccessToken(payload, rememberMe);
   db.refresh_tokens.push({
-    id: crypto.randomUUID(),
+    id: payload.sessionId,
     user_id: user.id,
     token_hash: refreshDigest(refreshToken),
     expires_at: new Date(Date.now() + 14 * 86400000).toISOString(),
@@ -115,12 +116,39 @@ export async function login(req: Request, res: Response): Promise<void> {
 
 export async function logout(req: Request, res: Response): Promise<void> {
   const refreshCookie = req.cookies?.plushr_refresh;
-  if (typeof refreshCookie === 'string' && refreshCookie) {
-    const digest = refreshDigest(refreshCookie);
-    await mutateAuthDb((db) => {
-      const record = db.refresh_tokens.find((token) => token.token_hash === digest && !token.revoked_at);
-      if (record) record.revoked_at = new Date().toISOString();
-    });
+  const accessCookie = req.cookies?.plushr_access;
+  const authorization = req.get('authorization');
+  const bearerToken = authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : undefined;
+  const accessSessionIds = new Set<string>();
+  for (const token of [accessCookie, bearerToken]) {
+    if (typeof token !== 'string' || !token) continue;
+    try {
+      accessSessionIds.add(verifyAccessToken(token).sessionId);
+    } catch {
+      continue;
+    }
+  }
+  const refreshDigestValue = typeof refreshCookie === 'string' && refreshCookie
+    ? refreshDigest(refreshCookie)
+    : undefined;
+  const sessionIds = new Set<string>();
+  await mutateAuthDb((db) => {
+    const now = new Date().toISOString();
+    const refreshRecord = refreshDigestValue
+      ? db.refresh_tokens.find((token) => token.token_hash === refreshDigestValue)
+      : undefined;
+    const accessRecords = [...accessSessionIds].map((sessionId) =>
+      db.refresh_tokens.find((token) => token.id === sessionId)
+    );
+    for (const record of new Set([refreshRecord, ...accessRecords])) {
+      if (record && !record.revoked_at) {
+        record.revoked_at = now;
+        sessionIds.add(record.id);
+      }
+    }
+  });
+  for (const sessionId of sessionIds) {
+    getRealtimeIo()?.in(`session:${sessionId}`).disconnectSockets(true);
   }
   clearAuthCookies(res);
   res.json({ ok: true });
@@ -149,9 +177,11 @@ export async function refreshSession(req: Request, res: Response): Promise<void>
 
   const digest = refreshDigest(refreshCookie);
   const rememberMe = decoded.rememberMe === true;
-  const session = await mutateAuthDb((db) => {
+  const result = await mutateAuthDb((db) => {
     const now = Date.now();
-    const record = db.refresh_tokens.find((token) => token.token_hash === digest && token.user_id === decoded.userId);
+    const record = db.refresh_tokens.find((token) =>
+      token.id === decoded.sessionId && token.token_hash === digest && token.user_id === decoded.userId
+    );
     if (!record || record.revoked_at || !(Date.parse(record.expires_at) > now) || decoded.exp * 1000 <= now) {
       return null;
     }
@@ -159,14 +189,18 @@ export async function refreshSession(req: Request, res: Response): Promise<void>
     if (!user || !canAuthenticate(db, user) || !matchesSession(decoded, user)) return null;
 
     record.revoked_at = new Date(now).toISOString();
-    return issueSession(db, user, rememberMe, decoded.firstLogin === true && user.must_change_password);
+    return {
+      sessionId: record.id,
+      session: issueSession(db, user, rememberMe, decoded.firstLogin === true && user.must_change_password),
+    };
   });
 
-  if (!session) {
+  if (!result) {
     res.status(401).json({ error: 'Refresh token invalide ou expiré.' });
     return;
   }
-  respondWithSession(res, session, rememberMe);
+  getRealtimeIo()?.in(`session:${result.sessionId}`).disconnectSockets(true);
+  respondWithSession(res, result.session, rememberMe);
 }
 
 export function getMe(req: AuthenticatedRequest, res: Response): void {

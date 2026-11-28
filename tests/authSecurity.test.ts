@@ -22,6 +22,7 @@ async function startServer() {
         method: path === 'me' || path === 'demo-accounts' ? 'GET' : 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Origin: `http://127.0.0.1:${port}`,
           ...(cookie ? { Cookie: cookie } : {}),
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
@@ -93,7 +94,7 @@ async function run() {
     const changeRecord = getSqliteDb().prepare('UPDATE refresh_tokens SET expires_at = ? WHERE token_hash = ?');
     changeRecord.run(new Date(0).toISOString(), digest);
     assert.equal((await call('refresh', undefined, session.cookie)).status, 401);
-    changeRecord.run(new Date(Date.now() + 60_000).toISOString(), digest);
+    changeRecord.run(new Date(Date.now() + 14 * 86400000).toISOString(), digest);
     const user = loadDb().users.find((entry) => entry.id === userId)!;
     const payload = createSessionPayload(user, false);
     const unregistered = signRefreshToken(payload);
@@ -127,9 +128,10 @@ async function run() {
     assert.equal((await call('refresh', undefined, session.cookie)).status, 401);
     assert.equal((await call('me', undefined, undefined, session.data.accessToken)).status, 401);
     assert.equal((await call('me', undefined, undefined, changed.data.accessToken)).status, 200);
-    assert.equal((await call('refresh', undefined, changed.cookie)).status, 200);
+    const refreshedChanged = await call('refresh', undefined, changed.cookie);
+    assert.equal(refreshedChanged.status, 200);
     await mutateDb((db) => { db.users.find((entry) => entry.id === userId)!.must_change_password = true; });
-    assert.equal((await call('change-password', { newPassword }, undefined, changed.data.accessToken)).status, 400);
+    assert.equal((await call('change-password', { newPassword }, undefined, refreshedChanged.data.accessToken)).status, 400);
     const firstLogin = await call('login', { ...employee, password: newPassword });
     assert.equal(firstLogin.status, 200);
     assert.equal((await call('change-password', { newPassword: 'FirstLogin#2026' }, undefined, firstLogin.data.accessToken)).status, 200);

@@ -979,17 +979,44 @@ export function listTasksAndWorkload(req: AuthenticatedRequest, res: Response): 
 }
 
 export async function createTask(req: AuthenticatedRequest, res: Response): Promise<void> {
-  const cid = req.user!.companyId;
-  if (!cid) {
+  const user = req.user;
+  const cid = user?.companyId;
+  if (!user || !cid || !['COMPANY_ADMIN', 'HR_MANAGER', 'MANAGER'].includes(user.roleCode)) {
     res.status(400).json({ error: 'Entreprise requise.' });
     return;
   }
 
-  const title = sanitizeText(req.body?.title, 180);
-  const departmentId = sanitizeText(req.body?.department_id, 50);
-  const dueDate = sanitizeText(req.body?.due_date || new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10), 20);
+  const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body as Record<string, unknown> : {};
+  const allowedFields = new Set(['title', 'department_id', 'due_date', 'project_id', 'description', 'priority', 'start_date', 'estimated_hours', 'assignee_id']);
+  if (Object.keys(body).some((key) => !allowedFields.has(key))) {
+    res.status(400).json({ error: 'Un ou plusieurs champs de tâche ne sont pas autorisés.' });
+    return;
+  }
 
-  if (!title || !departmentId || !isValidDateStr(dueDate)) {
+  const db = loadDb();
+  const title = sanitizeText(body.title, 180);
+  const departmentId = sanitizeText(body.department_id, 50);
+  const startDate = sanitizeText(body.start_date || new Date().toISOString().slice(0, 10), 20);
+  const dueDate = sanitizeText(body.due_date || new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10), 20);
+  const department = db.departments.find((entry) => entry.id === departmentId && entry.company_id === cid);
+  const managerEmployee = user.roleCode === 'MANAGER'
+    ? db.employees.find((entry) => entry.user_id === user.userId && entry.company_id === cid)
+    : undefined;
+  const projectId = body.project_id == null || body.project_id === '' ? null : sanitizeText(body.project_id, 50);
+  const project = projectId ? db.projects.find((entry) => entry.id === projectId && entry.company_id === cid) : undefined;
+  const assigneeId = body.assignee_id == null || body.assignee_id === '' ? null : sanitizeText(body.assignee_id, 50);
+  const assignee = assigneeId ? db.employees.find((entry) =>
+    entry.id === assigneeId && entry.company_id === cid && entry.department_id === departmentId
+  ) : undefined;
+  const priority = body.priority === undefined ? 'medium' : body.priority;
+  const estimatedHours = body.estimated_hours === undefined ? 8 : Number(body.estimated_hours);
+
+  if (!title || !department || !isValidDateStr(startDate) || !isValidDateStr(dueDate) ||
+      startDate > dueDate || !['low', 'medium', 'high', 'urgent'].includes(String(priority)) ||
+      !Number.isFinite(estimatedHours) || estimatedHours < 1 || estimatedHours > 1000 ||
+      (projectId && (!project || project.department_id !== departmentId)) ||
+      (assigneeId && !assignee) ||
+      (user.roleCode === 'MANAGER' && (!managerEmployee || managerEmployee.department_id !== departmentId))) {
     res.status(400).json({ error: 'Titre, département et date limite valide requis.' });
     return;
   }
@@ -997,17 +1024,17 @@ export async function createTask(req: AuthenticatedRequest, res: Response): Prom
   const task: DbSchema['tasks'][number] = {
     id: newId('task'),
     company_id: cid,
-    project_id: req.body?.project_id || null,
+    project_id: projectId,
     department_id: departmentId,
     title,
-    description: sanitizeText(req.body?.description || '', 800),
-    priority: (['low', 'medium', 'high', 'urgent'].includes(req.body?.priority) ? req.body.priority : 'medium') as 'low' | 'medium' | 'high' | 'urgent',
-    start_date: sanitizeText(req.body?.start_date || new Date().toISOString().slice(0, 10), 20),
+    description: sanitizeText(body.description || '', 800),
+    priority: priority as DbSchema['tasks'][number]['priority'],
+    start_date: startDate,
     due_date: dueDate,
-    estimated_hours: Math.max(1, Number(req.body?.estimated_hours || 8)),
+    estimated_hours: estimatedHours,
     actual_hours: 0,
     status: 'todo',
-    assignee_id: req.body?.assignee_id || null,
+    assignee_id: assigneeId,
     comments: [],
   };
 
@@ -1042,26 +1069,89 @@ export async function createTask(req: AuthenticatedRequest, res: Response): Prom
 }
 
 export async function updateTask(req: AuthenticatedRequest, res: Response): Promise<void> {
+  const user = req.user;
   const db = loadDb();
   const task = db.tasks.find((t) => t.id === req.params.id);
-  if (!task || !assertSameCompany(req, task.company_id)) {
+  if (!user || !task || !assertSameCompany(req, task.company_id)) {
     res.status(404).json({ error: 'Tâche introuvable.' });
     return;
   }
 
+  const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body as Record<string, unknown> : {};
+  const role = user.roleCode;
+  const isCompanyManager = role === 'COMPANY_ADMIN' || role === 'HR_MANAGER';
+  const actorEmployee = db.employees.find((entry) =>
+    entry.user_id === user.userId && entry.company_id === task.company_id
+  );
+  const isTeamManager = role === 'MANAGER' && actorEmployee?.department_id === task.department_id;
+  const isAssignedEmployee = role === 'EMPLOYEE' && (
+    task.assignee_id === actorEmployee?.id ||
+    db.task_assignments.some((assignment) =>
+      assignment.company_id === task.company_id && assignment.task_id === task.id &&
+      assignment.employee_id === actorEmployee?.id
+    )
+  );
+  if (!isCompanyManager && !isTeamManager && !isAssignedEmployee) {
+    res.status(role === 'SUPER_ADMIN' ? 403 : 404).json({ error: 'Tâche introuvable ou non autorisée.' });
+    return;
+  }
+
+  const allowedFields = new Set(['status', 'actual_hours', 'comment']);
+  if (isCompanyManager || isTeamManager) allowedFields.add('assignee_id');
+  if (Object.keys(body).length === 0 || Object.keys(body).some((key) => !allowedFields.has(key))) {
+    res.status(400).json({ error: 'Un ou plusieurs champs de tâche ne sont pas autorisés.' });
+    return;
+  }
+  const validStatuses = ['todo', 'in_progress', 'in_review', 'done'];
+  if ((body.status !== undefined && (typeof body.status !== 'string' || !validStatuses.includes(body.status))) ||
+      (body.actual_hours !== undefined && (!Number.isFinite(Number(body.actual_hours)) ||
+        Number(body.actual_hours) < 0 || Number(body.actual_hours) > 10000)) ||
+      (body.comment !== undefined && (typeof body.comment !== 'string' || body.comment.length > 400))) {
+    res.status(400).json({ error: 'Les données de la tâche sont invalides.' });
+    return;
+  }
+
+  let assigneeId: string | null | undefined;
+  if (body.assignee_id !== undefined) {
+    if (body.assignee_id !== null && body.assignee_id !== '' && typeof body.assignee_id !== 'string') {
+      res.status(400).json({ error: 'Affectation invalide.' });
+      return;
+    }
+    assigneeId = body.assignee_id == null || body.assignee_id === ''
+      ? null
+      : sanitizeText(body.assignee_id, 50);
+    if (assigneeId && !db.employees.some((entry) =>
+      entry.id === assigneeId && entry.company_id === task.company_id &&
+      entry.department_id === task.department_id
+    )) {
+      res.status(400).json({ error: 'L’employé affecté doit appartenir à la même équipe.' });
+      return;
+    }
+  }
+
   await mutateDb((d) => {
     const target = d.tasks.find((t) => t.id === task.id)!;
-    if (req.body?.status && ['todo', 'in_progress', 'in_review', 'done'].includes(req.body.status)) {
-      target.status = req.body.status;
+    if (typeof body.status === 'string') target.status = body.status as DbSchema['tasks'][number]['status'];
+    if (body.actual_hours !== undefined) target.actual_hours = Number(body.actual_hours);
+    if (assigneeId !== undefined) {
+      target.assignee_id = assigneeId;
+      d.task_assignments = d.task_assignments.filter((assignment) => assignment.task_id !== target.id);
+      if (assigneeId) {
+        d.task_assignments.push({
+          id: newId('ta'),
+          company_id: target.company_id,
+          task_id: target.id,
+          employee_id: assigneeId,
+          assigned_hours: target.estimated_hours,
+        });
+      }
     }
-    if (req.body?.actual_hours !== undefined) target.actual_hours = Math.max(0, Number(req.body.actual_hours));
-    if (req.body?.assignee_id !== undefined) target.assignee_id = req.body.assignee_id || null;
-    if (req.body?.comment) {
-      const actor = d.users.find((u) => u.id === req.user!.userId);
+    if (typeof body.comment === 'string' && body.comment.trim()) {
+      const actor = d.users.find((u) => u.id === user.userId);
       target.comments.push({
         id: newId('tc'),
         user_name: actor?.full_name || 'Utilisateur',
-        text: sanitizeText(req.body.comment, 400),
+        text: sanitizeText(body.comment, 400),
         created_at: new Date().toISOString(),
       });
     }
